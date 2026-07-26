@@ -118,12 +118,12 @@ export default function App() {
       gs.map((g) =>
         g.id === groupId
           ? {
-              ...g,
-              payments: [
-                ...g.payments,
-                { id: nextId(), name: `Платёж ${g.payments.length + 1}`, amount: 0, commissionOverride: '' },
-              ],
-            }
+            ...g,
+            payments: [
+              ...g.payments,
+              { id: nextId(), name: `Платёж ${g.payments.length + 1}`, amount: 0, commissionOverride: '' },
+            ],
+          }
           : g
       )
     );
@@ -165,7 +165,7 @@ export default function App() {
           <h1>Раскладка платежей по картам</h1>
           <p>Максимизация кэшбека при оплате несколькими картами</p>
         </div>
-        <div className="badge">v2.0</div>
+        <div className="badge">v{__APP_VERSION__}</div>
       </div>
 
       <DataToolbar getState={getExportState} onImport={handleImport} />
