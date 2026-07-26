@@ -38,7 +38,7 @@ jobs:
 
       # 6. Настраиваем AWS CLI для работы с Cloud.ru S3
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           aws-access-key-id: ${{ secrets.CLOUD_RU_ACCESS_KEY }}
           aws-secret-access-key: ${{ secrets.CLOUD_RU_SECRET_KEY }}
