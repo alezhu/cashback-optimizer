@@ -41,7 +41,7 @@ jobs:
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.CLOUD_RU_ACCESS_KEY }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.CLOUD_RU_SECRET_KEY }}
-          AWS_DEFAULT_REGION: ru-central1
+          AWS_DEFAULT_REGION: ru-central-1
         run: |
           aws s3 sync dist/ s3://${{ vars.CLOUD_RU_BUCKET_NAME }} \
             --endpoint-url https://s3.cloud.ru \
