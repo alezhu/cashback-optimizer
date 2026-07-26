@@ -19,7 +19,7 @@ jobs:
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 9 # Укажите вашу мажорную версию pnpm (9, 10 и т.д.)
+          version: 10
 
       # 3. Устанавливаем Node.js с поддержкой кэша pnpm
       - name: Set up Node.js
