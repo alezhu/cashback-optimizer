@@ -1,0 +1,48 @@
+name: Deploy React App to Cloud.ru
+
+on:
+  push:
+    branches:
+      - release
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Клонируем репозиторий
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Устанавливаем pnpm перед Node.js
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      # 3. Устанавливаем Node.js с поддержкой кэша pnpm
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: 'pnpm'
+
+      # 4. Устанавливаем зависимости строго по pnpm-lock.yaml
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # 5. Собираем React-проект через Vite
+      - name: Build application
+        run: pnpm build
+
+      # 6. Синхронизируем собранную папку dist с бакетом Cloud.ru
+      - name: Upload to Cloud.ru S3
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.CLOUD_RU_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.CLOUD_RU_SECRET_KEY }}
+          AWS_DEFAULT_REGION: ru-central-1
+        run: |
+          aws s3 sync dist/ s3://${{ vars.CLOUD_RU_BUCKET_NAME }} \
+            --endpoint-url https://s3.cloud.ru \
+            --delete

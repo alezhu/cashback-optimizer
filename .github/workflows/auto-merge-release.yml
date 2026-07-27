@@ -1,0 +1,42 @@
+name: Merge Tag from Main to Release and Create GitHub Release
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+
+jobs:
+  merge-and-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Check branch, merge to release and create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git fetch origin main release
+
+          # Проверяем, входит ли коммит с тегом в историю ветки main
+          if git merge-base --is-ancestor ${{ github.sha }} origin/main; then
+            echo "Tag is on main branch. Merging to release..."
+            git checkout release
+            git merge --no-ff origin/main -m "Merge main (${{ github.ref_name }}) into release"
+            git push origin release
+
+            echo "Creating GitHub Release..."
+            gh release create "${{ github.ref_name }}" --title "${{ github.ref_name }}" --generate-notes
+          else
+            echo "Tag commit is not on main branch. Skipping merge and release creation."
+          fi

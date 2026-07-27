@@ -1,4 +1,5 @@
-// Базовые расчёты по одному платежу: комиссия, сумма к списанию, метки clamp/override.
+// Базовые расчёты по одному платежу: комиссия, сумма к списанию, метки clamp/override,
+// плюс подбор подмножества ("рюкзак"), максимально близкого к целевой сумме.
 // Работает только с "чистыми" типами (CleanPayment/CleanGroup) — все числовые
 // поля здесь уже гарантированно number|null, конвертация форм происходит в
 // normalize.ts до вызова этих функций.
@@ -70,44 +71,87 @@ export function chunkBilled(chunk: Chunk): number {
 }
 
 /**
- * Рюкзак 0/1: выбрать подмножество платежей группы, чья суммарная сумма к списанию
- * максимальна, но не превышает capacityRub (в рублях, округление до целого —
- * приемлемое приближение, т.к. далее сумма всё равно округляется до 10 ₽).
+ * Подбор подмножества элементов (по их "весам", округлённым до рубля), сумма
+ * которых максимально близка к target, не превышая cap:
+ * - если существует подмножество с суммой в диапазоне [target, cap] —
+ *   берём то, что даёт МИНИМАЛЬНОЕ превышение target (это позволяет как можно
+ *   точнее упереться в target, не растрачивая лишние деньги сверх него);
+ * - если такого нет (даже вся вместимость cap не дотягивает до target) —
+ *   берём подмножество с МАКСИМАЛЬНОЙ суммой, не превышающей cap.
+ *
+ * Реализовано через классический 0/1 subset-sum: таблица reachable[i][c] —
+ * "достижима ли сумма ровно c, используя первые i элементов".
+ */
+function pickClosestSubset(weights: number[], target: number, cap: number): number[] {
+  const n = weights.length;
+  const capInt = Math.max(0, Math.floor(cap));
+  if (n === 0 || capInt <= 0) return [];
+
+  const w = weights.map((x) => Math.max(0, Math.round(x)));
+
+  // reachable[i][c] — можно ли получить сумму ровно c из первых i элементов.
+  const reachable: boolean[][] = Array.from({ length: n + 1 }, () => new Array(capInt + 1).fill(false));
+  reachable[0][0] = true;
+  for (let i = 1; i <= n; i++) {
+    const wi = w[i - 1];
+    for (let c = 0; c <= capInt; c++) {
+      reachable[i][c] = reachable[i - 1][c] || (c >= wi && reachable[i - 1][c - wi]);
+    }
+  }
+
+  const targetInt = Math.max(0, Math.round(target));
+
+  // Ищем минимальную достижимую сумму >= target (в пределах cap).
+  let chosen = -1;
+  for (let c = Math.min(targetInt, capInt); c <= capInt; c++) {
+    if (reachable[n][c]) {
+      chosen = c;
+      break;
+    }
+  }
+  // Если такой суммы нет — берём максимальную достижимую сумму <= target.
+  if (chosen === -1) {
+    for (let c = Math.min(targetInt, capInt); c >= 0; c--) {
+      if (reachable[n][c]) {
+        chosen = c;
+        break;
+      }
+    }
+  }
+  if (chosen === -1) return []; // reachable[n][0] всегда true, сюда не попадём
+
+  // Восстанавливаем набор элементов, идя по таблице в обратном порядке.
+  let c = chosen;
+  const idx: number[] = [];
+  for (let i = n; i >= 1; i--) {
+    if (reachable[i - 1][c]) {
+      continue; // сумма c достижима и без элемента i — не берём его
+    }
+    idx.push(i - 1);
+    c -= w[i - 1];
+  }
+  return idx.sort((a, b) => a - b);
+}
+
+/**
+ * Подбор подмножества целых "кусков" (групп или их частей, оставшихся в пуле),
+ * чья суммарная сумма к списанию максимально близка к target, не превышая cap.
+ */
+export function pickClosestChunks(chunks: Chunk[], target: number, cap: number): number[] {
+  return pickClosestSubset(chunks.map(chunkBilled), target, cap);
+}
+
+/**
+ * Подбор подмножества отдельных платежей одной группы, чья суммарная сумма
+ * к списанию максимально близка к target, не превышая cap. Используется, чтобы
+ * разбить группу, которая не помещается целиком.
  *
  * Возвращает индексы выбранных платежей (в порядке исходного массива payments).
  */
-export function knapsackSelect(payments: CleanPayment[], group: CleanGroup, capacityRub: number): number[] {
-  const n = payments.length;
-  const cap = Math.max(0, Math.floor(capacityRub));
-  if (cap <= 0 || n === 0) return [];
-
-  // "Вес" каждого платежа для рюкзака — его сумма к списанию, округлённая до рубля.
-  const weights = payments.map((p) => Math.max(0, Math.round(billedOf(p, group))));
-
-  // dp[i][c] = максимальная сумма, которую можно набрать из первых i платежей
-  // при ограничении по вместимости c рублей.
-  const dp: number[][] = Array.from({ length: n + 1 }, () => new Array(cap + 1).fill(0));
-
-  for (let i = 1; i <= n; i++) {
-    const w = weights[i - 1];
-    const prev = dp[i - 1];
-    const row = dp[i];
-    for (let c = 0; c <= cap; c++) {
-      // Вариант "не берём платёж i" — наследуем значение без него.
-      row[c] = prev[c];
-      // Вариант "берём платёж i", если он помещается и даёт больший результат.
-      if (w <= c && prev[c - w] + w > row[c]) row[c] = prev[c - w] + w;
-    }
-  }
-
-  // Восстанавливаем набор выбранных платежей, идя по таблице dp в обратном порядке.
-  let c = cap;
-  const idx: number[] = [];
-  for (let i = n; i >= 1; i--) {
-    if (dp[i][c] !== dp[i - 1][c]) {
-      idx.push(i - 1);
-      c -= weights[i - 1];
-    }
-  }
-  return idx.sort((a, b) => a - b);
+export function pickClosestPayments(payments: CleanPayment[], group: CleanGroup, target: number, cap: number): number[] {
+  return pickClosestSubset(
+    payments.map((p) => billedOf(p, group)),
+    target,
+    cap
+  );
 }
