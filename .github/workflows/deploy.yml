@@ -13,7 +13,7 @@ jobs:
     steps:
       # 1. Клонируем репозиторий
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       # 2. Устанавливаем pnpm перед Node.js
       - name: Setup pnpm
