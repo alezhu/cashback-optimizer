@@ -13,6 +13,9 @@
 /** Числовое поле формы: либо число, либо пустая строка (значение не введено). */
 export type FormNumber = number | '';
 
+/** Какой алгоритм распределения использовать при расчёте. */
+export type CalcMode = 'heuristic' | 'exact';
+
 // ---------- Формы ----------
 
 export interface Payment {

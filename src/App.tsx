@@ -16,9 +16,10 @@ import DataToolbar from './components/DataToolbar';
 import { seedCards, seedGroups } from './data/seed';
 import { nextId, syncIdCounter } from './utils/idGenerator';
 import { allocate } from './services/allocationService';
+import { exactAllocate } from './services/exactAllocationService';
 import { cleanCard, cleanGroup } from './services/normalize';
 import { loadState, saveState } from './services/db';
-import type { Card, Group, Payment, FormNumber, CardAllocationResult, PersistedState } from './types';
+import type { Card, Group, Payment, FormNumber, CardAllocationResult, PersistedState, CalcMode } from './types';
 
 const STATE_VERSION = 1;
 
@@ -28,8 +29,17 @@ export default function App() {
   const [groups, setGroups] = useState<Group[]>(seedGroups);
   // Допустимое превышение целевой суммы карты, ₽ (см. allocationService.allocate).
   const [tolerance, setTolerance] = useState<FormNumber>(100);
+  // Какой алгоритм использовать: быстрая эвристика или полный перебор.
+  const [mode, setMode] = useState<CalcMode>('heuristic');
   // Результат последнего расчёта (null, пока расчёт ни разу не запускали).
   const [results, setResults] = useState<CardAllocationResult[] | null>(null);
+  // Идёт ли сейчас расчёт (актуально для полного перебора — он может занять
+  // заметное время, и хочется успеть показать индикатор перед тем, как
+  // синхронный перебор заблокирует поток).
+  const [isCalculating, setIsCalculating] = useState(false);
+  // Доп. информация о последнем расчёте полным перебором: доказан ли найденный
+  // результат как максимум, и сколько узлов перебора это заняло.
+  const [exactInfo, setExactInfo] = useState<{ optimal: boolean; nodesExplored: number } | null>(null);
   // Какие группы сейчас развёрнуты во вкладке «Группы» (по умолчанию — все).
   const [openGroups, setOpenGroups] = useState<Set<number>>(() => new Set(groups.map((g) => g.id)));
   // Пока не завершилась первая попытка чтения из IndexedDB, не пишем в неё —
@@ -118,12 +128,12 @@ export default function App() {
       gs.map((g) =>
         g.id === groupId
           ? {
-            ...g,
-            payments: [
-              ...g.payments,
-              { id: nextId(), name: `Платёж ${g.payments.length + 1}`, amount: 0, commissionOverride: '' },
-            ],
-          }
+              ...g,
+              payments: [
+                ...g.payments,
+                { id: nextId(), name: `Платёж ${g.payments.length + 1}`, amount: 0, commissionOverride: '' },
+              ],
+            }
           : g
       )
     );
@@ -140,10 +150,27 @@ export default function App() {
     // числовым типам (normalize.ts) перед передачей в чистый сервис расчёта.
     const cleanCards = cards.map(cleanCard);
     const cleanGroups = groups.map(cleanGroup);
-    const toleranceNum = tolerance === '' ? 0 : tolerance;
-    const res = allocate(cleanCards, cleanGroups, toleranceNum);
-    setResults(res);
-    setTab('calc'); // сразу показываем результат
+
+    if (mode === 'heuristic') {
+      const toleranceNum = tolerance === '' ? 0 : tolerance;
+      const res = allocate(cleanCards, cleanGroups, toleranceNum);
+      setExactInfo(null);
+      setResults(res);
+      setTab('calc');
+      return;
+    }
+
+    // Полный перебор может занять заметное время и синхронно заблокирует
+    // поток — сначала показываем индикатор "Считаю…", а сам перебор
+    // запускаем следующим тиком, чтобы React успел его отрисовать.
+    setIsCalculating(true);
+    setTab('calc');
+    setTimeout(() => {
+      const { results: res, optimal, nodesExplored } = exactAllocate(cleanCards, cleanGroups);
+      setExactInfo({ optimal, nodesExplored });
+      setResults(res);
+      setIsCalculating(false);
+    }, 30);
   };
 
   // ---------- экспорт / импорт ----------
@@ -156,6 +183,7 @@ export default function App() {
     setTolerance(state.tolerance);
     setOpenGroups(new Set(state.groups.map((g) => g.id)));
     setResults(null); // старый расчёт больше не соответствует новым данным
+    setExactInfo(null);
   };
 
   return (
@@ -190,7 +218,18 @@ export default function App() {
         />
       )}
 
-      {tab === 'calc' && <CalcTab tolerance={tolerance} setTolerance={setTolerance} runCalc={runCalc} results={results} />}
+      {tab === 'calc' && (
+        <CalcTab
+          mode={mode}
+          setMode={setMode}
+          tolerance={tolerance}
+          setTolerance={setTolerance}
+          runCalc={runCalc}
+          results={results}
+          isCalculating={isCalculating}
+          exactInfo={exactInfo}
+        />
+      )}
     </div>
   );
 }
