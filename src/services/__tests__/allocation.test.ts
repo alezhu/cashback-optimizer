@@ -10,10 +10,10 @@ function createScenarioData(): { cards: Card[]; groups: Group[]; tolerance: numb
   return {
     tolerance: 100,
     cards: [
-      { id: 1, name: 'Карта 1', rate: 5, limit: 225, roundTo: 1 },
-      { id: 2, name: 'Карта 2', rate: 5, limit: 1000, roundTo: 1 },
-      { id: 29, name: 'Карта 3', rate: 5, limit: 1000, roundTo: 1 },
-      { id: 3, name: 'Карта 4', rate: 5, limit: 0, roundTo: 1 },
+      { id: 1, name: 'Карта 1', active: true, rate: 5, limit: 225, roundTo: 1 },
+      { id: 2, name: 'Карта 2', active: true, rate: 5, limit: 1000, roundTo: 1 },
+      { id: 29, name: 'Карта 3', active: true, rate: 5, limit: 1000, roundTo: 1 },
+      { id: 3, name: 'Карта 4', active: true, rate: 5, limit: 0, roundTo: 1 },
     ],
     groups: [
       {
@@ -91,7 +91,7 @@ function summarize(results: ReturnType<typeof allocate>) {
 
   results.forEach((cr) => {
     const rawCashback = cr.transactions.reduce((s, t) => s + t.cashback, 0);
-    const cb = cr.card.limit > 0 ? Math.min(rawCashback, cr.card.limit) : 0;
+    const cb = cr.card.limit > 0 ? Math.min(rawCashback, cr.card.limit) : rawCashback;
     const sum = cr.transactions.reduce((s, t) => s + t.roundedSum, 0);
     totalSum += sum;
     totalCashback += cb;
@@ -135,9 +135,9 @@ describe('Allocation Algorithms on test scenario', () => {
     expect(results[1].transactions.length).toBe(5);
   });
 
-  it('When Карта 1 limit is set to 0, both Heuristic and Exact should give 900 ₽ cashback on Карта 2', () => {
+  it('When Карта 1 is inactive (active: false), both Heuristic and Exact should give 900 ₽ cashback on Карта 2', () => {
     const data = createScenarioData();
-    data.cards[0].limit = 0; // Обнуляем лимит первой карты
+    data.cards[0].active = false; // Отключаем первую карту
 
     const cleanCards = data.cards.map(cleanCard);
     const cleanGroups = data.groups.map(cleanGroup);
@@ -162,10 +162,40 @@ describe('Allocation Algorithms on test scenario', () => {
     expect(exactResults[1].transactions.length).toBe(5);
   });
 
+  it('Card with limit: 0 (or limit: "") is treated as unlimited cashback (no cap)', () => {
+    const cards = [
+      { id: 1, name: 'Безлимитная карта 5%', active: true, rate: 5, limit: 0, roundTo: 1 },
+    ];
+    const groups = [
+      {
+        id: 1,
+        name: 'Группа 1',
+        commission: 0,
+        roundCommission: false,
+        minCommission: null,
+        maxCommission: null,
+        payments: [
+          { id: 1, name: 'П1', amount: 50000, commissionOverride: null },
+        ],
+      },
+    ];
+
+    const heurResults = allocate(cards, groups, 100);
+    const heurSummary = summarize(heurResults);
+    // 5% от 50 000 ₽ = 2500 ₽ кэшбека (без ограничения лимитом!)
+    expect(heurSummary.totalCashback).toBe(2500);
+    expect(heurSummary.cardsUsed).toBe(1);
+
+    const { results: exactResults } = exactAllocate(cards, groups);
+    const exactSummary = summarize(exactResults);
+    expect(exactSummary.totalCashback).toBe(2500);
+    expect(exactSummary.cardsUsed).toBe(1);
+  });
+
   it('Higher rate cards are prioritized before lower rate cards', () => {
     const cards = [
-      { id: 1, name: 'Карта 5%', rate: 5, limit: 1000, roundTo: 1 },
-      { id: 2, name: 'Карта 10%', rate: 10, limit: 500, roundTo: 1 },
+      { id: 1, name: 'Карта 5%', active: true, rate: 5, limit: 1000, roundTo: 1 },
+      { id: 2, name: 'Карта 10%', active: true, rate: 10, limit: 500, roundTo: 1 },
     ];
     const groups = [
       {
@@ -195,8 +225,8 @@ describe('Allocation Algorithms on test scenario', () => {
 
   it('Spillover when active card limit is exceeded into second card', () => {
     const cards = [
-      { id: 1, name: 'Карта 1', rate: 10, limit: 500, roundTo: 1 }, // cap = 5000 ₽
-      { id: 2, name: 'Карта 2', rate: 10, limit: 500, roundTo: 1 }, // cap = 5000 ₽
+      { id: 1, name: 'Карта 1', active: true, rate: 10, limit: 500, roundTo: 1 }, // cap = 5000 ₽
+      { id: 2, name: 'Карта 2', active: true, rate: 10, limit: 500, roundTo: 1 }, // cap = 5000 ₽
     ];
     const groups = [
       {
