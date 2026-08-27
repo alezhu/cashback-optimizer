@@ -69,7 +69,6 @@ body {
   background: var(--bg);
   color: var(--text);
   font-family: 'IBM Plex Sans', system-ui, sans-serif;
-  transition: background 0.15s ease, color 0.15s ease;
 }
 
 .mono { font-family: 'IBM Plex Mono', monospace; }
@@ -128,6 +127,14 @@ body {
   background: var(--panel);
   color: var(--text-strong);
   border-bottom-color: var(--tab-active-border);
+}
+.tab-docs {
+  margin-left: auto;
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+}
+.tab-docs:hover {
+  color: var(--cb-color);
 }
 
 .panel {
@@ -221,7 +228,7 @@ body {
 /* Cards tab */
 .card-row {
   display: grid;
-  grid-template-columns: 20px 24px 40px 2fr 1fr 1fr 80px 64px;
+  grid-template-columns: 20px 24px 56px 2fr 1fr 1fr 80px 64px;
   gap: 10px;
   align-items: center;
   background: var(--panel-2);
@@ -235,10 +242,15 @@ body {
 }
 .card-row-header {
   display: grid;
-  grid-template-columns: 20px 24px 40px 2fr 1fr 1fr 80px 64px;
+  grid-template-columns: 20px 24px 56px 2fr 1fr 1fr 80px 64px;
   gap: 10px;
   padding: 0 10px;
   margin-bottom: 6px;
+}
+.card-row-header .field-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .card-actions {
   display: flex;

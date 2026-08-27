@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="dark light">
+  <title>Руководство пользователя — Cashback Optimizer</title>
+  <script>
+    (function () {
+      try {
+        var saved = localStorage.getItem('cashback-optimizer-theme');
+        var theme =
+          saved === 'light' || saved === 'dark'
+            ? saved
+            : window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches
+              ? 'light'
+              : 'dark';
+        document.documentElement.setAttribute('data-theme', theme);
+      } catch (e) {}
+    })();
+  </script>
+  <style>
+    :root {
+      --bg: #0f1720;
+      --text: #e7e2d5;
+      color-scheme: dark light;
+    }
+    [data-theme="light"] {
+      --bg: #f8fafc;
+      --text: #1e293b;
+      color-scheme: light;
+    }
+    [data-theme="dark"] {
+      --bg: #0f1720;
+      --text: #e7e2d5;
+      color-scheme: dark;
+    }
+    html, body {
+      background-color: var(--bg);
+      color: var(--text);
+      margin: 0;
+    }
+  </style>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <!-- Навигация -->
+  <header class="header">
+    <a href="#" class="logo-wrap">
+      <span class="logo-title">Cashback Optimizer</span>
+    </a>
+    <div class="header-right">
+      <nav>
+        <ul class="nav-links">
+          <li><a href="#about">О программе</a></li>
+          <li><a href="#screens">Интерфейс</a></li>
+          <li><a href="#examples">Примеры</a></li>
+          <li><a href="#tips">Лайфхаки</a></li>
+        </ul>
+      </nav>
+      <button id="themeToggle" class="theme-toggle-btn" title="Сменить тему оформления">
+        <span id="themeIcon">☀️</span>
+        <span id="themeText">Светлая тема</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <!-- Hero Блок -->
+    <section class="hero" id="about">
+      <h1>Инструкция по использованию <span>Cashback Optimizer</span></h1>
+      <p>
+        Сервис для умно-жадных: умная раскладка ваших ежемесячных счетов, ЖКХ или подписок по банковским картам для получения максимального кэшбека.
+      </p>
+      <div class="quick-stats">
+        <div class="stat-chip">🎯 <b>Приоритет:</b> Карты с максимальным % кэшбека</div>
+        <div class="stat-chip">📦 <b>Экономия:</b> Минимальное число используемых карт</div>
+        <div class="stat-chip">⚡ <b>Точность:</b> Учёт комиссий и шага начисления</div>
+      </div>
+    </section>
+
+    <!-- Раздел 1: Что решает программа -->
+    <section>
+      <h2><span class="step-num">1</span> Зачем нужна программа?</h2>
+      <p>
+        У большинства людей есть несколько банковских карт: одна даёт <b>10%</b> на ЖКУ (но с лимитом до 1&nbsp;000&nbsp;₽ кэшбека), вторая — <b>5%</b> на всё (с лимитом до 1&nbsp;500&nbsp;₽), третья — <b>1.5%</b> без ограничений.
+      </p>
+      <p>
+        Каждый месяц нужно оплачивать 5–15 квитанций и счетов (свет, вода, капремонт, управляющая компания, интернет, мобильная связь, подписки). Если платить наугад или одной картой — теряются сотни рублей кэшбека, либо лимиты карт переполняются впустую.
+      </p>
+      
+      <div class="callout">
+        <strong>Что делает Cashback Optimizer:</strong>
+        вы вводите ваши карты и список платежей, нажимаете кнопку <b>«Рассчитать»</b> — алгоритм за доли секунды раскладывает платежи по нужным картам так, чтобы вы получили <b>абсолютный максимум денег</b> с учётом всех лимитов, комиссий и округлений.
+      </div>
+    </section>
+
+    <!-- Раздел 2: Основные экраны интерфейса -->
+    <section id="screens">
+      <h2><span class="step-num">2</span> Как устроен интерфейс</h2>
+
+      <!-- 2.1. Вкладка Карты -->
+      <h3>2.1. Вкладка «Карты» — ваши банковские карты</h3>
+      <p>
+        Здесь вы настраиваете список ваших действующих карт с их условиями начисления бонусов.
+      </p>
+
+      <div class="showcase-block">
+        <div class="screenshot-wrap">
+          <img src="images/cards-tab.png" alt="Вкладка Карты в темной теме">
+        </div>
+        <div class="screenshot-caption">Экран настройки банковских карт</div>
+      </div>
+
+      <div class="feature-grid">
+        <div class="feature-card">
+          <div class="feature-card-title">💳 Название карты</div>
+          <p>Любое удобное имя (например, «Альфа ЖКУ», «Т-Банк», «Озон»).</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-card-title">📈 Кэшбек (%)</div>
+          <p>Процент начисления бонусов по карте (например, 10, 5, 1.5 или 1).</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-card-title">🛡️ Лимит кэшбека (₽)</div>
+          <p>Месячный потолок кэшбека по тарифу. Если оставить <b>0 или пустым</b> — карта считается <b>безлимитной</b>.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-card-title">🔢 Кратность (₽)</div>
+          <p>Шаг округления бонусов банком (обычно 1&nbsp;₽, но может быть и 10&nbsp;₽). Если не установлен (0 или пусто) — кэшбек начисляется с точностью до копеек. При заданном значении алгоритм округляет сумму списания вверх ради получения полного бонуса.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-card-title">🔘 Переключатель «Вкл»</div>
+          <p>Позволяет временно отключить карту из расчёта (например, если лимит уже исчерпан в магазинах).</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-card-title">↕️ Drag & Drop и стрелки</div>
+          <p>Перетаскивайте карточки мышкой для настройки визуального порядка приоритета карт.</p>
+        </div>
+      </div>
+
+      <!-- 2.2. Вкладка Группы -->
+      <h3>2.2. Вкладка «Группы» — ваши счета и платежи</h3>
+      <p>
+        Платежи объединяются в Группы по поставщикам, лицевым счетам или способам оплаты (например, «Квартира на Ленина», «Дача», «Квартплата+»). Каждая группа, назначенная на карту, оплачивается как одна банковская транзакция.
+      </p>
+
+      <div class="showcase-block">
+        <div class="screenshot-wrap">
+          <img src="images/groups-tab.png" alt="Вкладка Группы в темной теме">
+        </div>
+        <div class="screenshot-caption">Экран настройки групп</div>
+      </div>
+
+      <div class="feature-grid">
+        <div class="feature-card">
+          <div class="feature-card-title">📑 Параметры комиссии группы</div>
+          <p>Укажите комиссию сервиса (% комиссии, мин. и макс. порог в рублях, а также флаг округления до целого рубля).</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-card-title">🔒 Флаг «Фикс.»</div>
+          <p>Запрещает программе увеличивать сумму данного платежа (используйте для строгих счетов, госпошлин и услуг с точной суммой).</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-card-title">⚙️ Кнопка «% Своя комиссия»</div>
+          <p>Если один платёж в группе имеет особые условия (например, без комиссии или повышенный тариф), задайте ему личные настройки.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-card-title">📋 Кнопка «Дублировать»</div>
+          <p>Копирует группу со всеми платежами в один клик (удобно для создания шаблонов на новый месяц).</p>
+        </div>
+      </div>
+
+      <!-- 2.3. Вкладка Расчёт -->
+      <h3>2.3. Вкладка «Расчёт» — итоги, транзакции и аналитика</h3>
+      <p>
+        Главный экран работы. Нажмите <b>«Рассчитать»</b>, и программа построит готовый план оплаты по каждой карте с точными суммами.
+      </p>
+
+      <div class="showcase-block">
+        <div class="screenshot-wrap">
+          <img src="images/calc-tab.png" alt="Вкладка Расчёт в темной теме">
+        </div>
+        <div class="screenshot-caption">Результаты оптимизации</div>
+      </div>
+
+      <div class="feature-grid">
+        <div class="feature-card">
+          <div class="feature-card-title">⚡ Эвристика vs Полный перебор</div>
+          <p><b>Эвристика</b> считает мгновенно и бережно сохраняет группы. <b>Полный перебор</b> находит абсолютный математический максимум в фоне.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-card-title">📊 Финансовая аналитика</div>
+          <p>Карточки показывают: исходную сумму, удержанные комиссии, доплату, начисленный кэшбек и <b>Чистую выгоду</b>.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-card-title">🚀 Бенчмарк-сравнение</div>
+          <p>Сравнивает вашу умную раскладку со стандартной картой 1% и показывает, сколько чистых рублей вы сэкономили сверху.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-card-title">📋 Кнопка копирования сумм</div>
+          <p>Нажимайте кнопку рядом с суммой платежа, чтобы скопировать её в буфер и быстро вставить в банковское приложение.</p>
+        </div>
+      </div>
+
+      <!-- 2.4. Что такое Доплата -->
+      <h3>2.4. Что такое «Доплата» и зачем она нужна?</h3>
+      <p>
+        При расчёте вы увидите карточку <b>«Доплата»</b> со знаком вопроса. Кликните по иконке, чтобы открыть встроенную справку.
+      </p>
+
+      <div class="showcase-block">
+        <div class="screenshot-wrap">
+          <img src="images/step-modal.png" alt="Модальное окно справки Доплата">
+        </div>
+        <div class="screenshot-caption">Всплывающее окно с детальным объяснением механики банковской доплаты</div>
+      </div>
+
+      <div class="callout callout-green">
+        <strong>Как работает выгода от доплаты (на примере 2 месяцев):</strong>
+        <p style="margin-top: 8px;">
+          Многие банки начисляют кэшбек только за полный шаг суммы (например, 1% шагами по 100&nbsp;₽ — то есть ровно по 1&nbsp;₽ бонуса за каждые полные 100&nbsp;₽ списания, а остаток сгорает).
+        </p>
+        <p>
+          Представьте, что ваш счёт за ЖКУ составляет <b>1&nbsp;950&nbsp;₽ каждый месяц</b>:
+        </p>
+        <ul>
+          <li>
+            <b>Если платить строго по 1&nbsp;950&nbsp;₽:</b>
+            в 1-й месяц банк начислит кэшбек только на 1&nbsp;900&nbsp;₽ (<b>19&nbsp;₽</b>, а 50&nbsp;₽ сгорят). Во 2-й месяц — снова <b>19&nbsp;₽</b> (50&nbsp;₽ сгорят).<br>
+            <i>Итого за 2 месяца:</i> <b>38&nbsp;₽</b> кэшбека.
+          </li>
+          <li>
+            <b>Если применить доплату и заплатить в 1-й месяц 2&nbsp;000&nbsp;₽ (+50&nbsp;₽):</b>
+            в 1-й месяц вы платите 2&nbsp;000&nbsp;₽ и получаете <b>20&nbsp;₽</b> кэшбека. Переплата 50&nbsp;₽ не теряется, а остаётся авансом на вашем лицевом счёте ЖКУ. Во 2-й месяц к оплате останется на 50&nbsp;₽ меньше — ровно 1&nbsp;900&nbsp;₽, с которых банк начислит ещё <b>19&nbsp;₽</b>.<br>
+            <i>Итого за 2 месяца:</i> <b>39&nbsp;₽</b> кэшбека (вместо 38&nbsp;₽).
+          </li>
+        </ul>
+        <p style="margin-bottom: 0;">
+          💰 <b>Результат:</b> вы потратили ровно те же 3&nbsp;900&nbsp;₽ за 2 месяца, но получили на <b>1&nbsp;₽ чистой выгоды больше</b> просто за счёт правильного шага оплаты!
+        </p>
+      </div>
+    </section>
+
+    <!-- Раздел 3: Примеры использования -->
+    <section id="examples">
+      <h2><span class="step-num">3</span> Примеры использования</h2>
+      <p>
+        Ниже разобраны типовые жизненные ситуации: от базовой оплаты счетов до сложных комбинаций с комиссиями и лимитами.
+      </p>
+
+      <!-- Пример 1 -->
+      <div class="example-card">
+        <div class="example-header">
+          <div class="example-title">Пример 1. Превышение лимита: умное разделение на 2 карты</div>
+          <span class="difficulty-badge diff-1">Базовый</span>
+        </div>
+        <div class="example-body">
+          <p>
+            <strong>Ситуация:</strong> У вас есть карта с 10% кэшбеком, но её лимит ограничен 1&nbsp;000&nbsp;₽ (максимум покупок 10&nbsp;000&nbsp;₽). Вторая карта даёт 5% (лимит 1&nbsp;500&nbsp;₽). Сумма ваших счетов за месяц — 18&nbsp;000&nbsp;₽.
+          </p>
+          <div class="example-grid">
+            <div class="example-column">
+              <h5>Ручной расчёт (как делают обычно)</h5>
+              <p>Оплатить всё картой 10%: начислится только потолок 1&nbsp;000&nbsp;₽, а с 8&nbsp;000&nbsp;₽ кэшбек сгорит.</p>
+            </div>
+            <div class="example-column">
+              <h5>Решение Cashback Optimizer</h5>
+              <p>Программа отправит ровно <b>10&nbsp;000&nbsp;₽</b> на карту 10% (забрав макс. 1&nbsp;000&nbsp;₽), а оставшиеся <b>8&nbsp;000&nbsp;₽</b> перенаправит на карту 5% (получив 400&nbsp;₽).</p>
+            </div>
+          </div>
+          <div class="example-result-banner">
+            💰 <b>Результат:</b> Итоговый кэшбек <b>1 400 ₽</b> (на 400 ₽ больше, чем при оплате одной картой).
+          </div>
+        </div>
+      </div>
+
+      <!-- Пример 2 -->
+      <div class="example-card">
+        <div class="example-header">
+          <div class="example-title">Пример 2. Использование безлимитной карты для крупных сумм</div>
+          <span class="difficulty-badge diff-2">Средний</span>
+        </div>
+        <div class="example-body">
+          <p>
+            <strong>Ситуация:</strong> У вас карта 10% с лимитом 500&nbsp;₽ (макс. 5&nbsp;000&nbsp;₽ трат) и карта 1.5% без лимита. Сумма счетов составляет 45&nbsp;000&nbsp;₽.
+          </p>
+          <div class="example-grid">
+            <div class="example-column">
+              <h5>Настройка</h5>
+              <p>У карты 1.5% оставьте поле <b>«Лимит» пустым или укажите 0</b>.</p>
+            </div>
+            <div class="example-column">
+              <h5>Распределение</h5>
+              <p>5&nbsp;000&nbsp;₽ уйдёт на карту 10% (500&nbsp;₽ кэшбека), а весь остаток 40&nbsp;000&nbsp;₽ уйдёт на безлимитную карту 1.5% (600&nbsp;₽ кэшбека).</p>
+            </div>
+          </div>
+          <div class="example-result-banner">
+            💰 <b>Результат:</b> Итоговый кэшбек <b>1 100 ₽</b> без потерь и переполнения лимитов.
+          </div>
+        </div>
+      </div>
+
+      <!-- Пример 3 -->
+      <div class="example-card">
+        <div class="example-header">
+          <div class="example-title">Пример 3. Группа «Квартплата+» и настройка «Своя комиссия»</div>
+          <span class="difficulty-badge diff-3">Продвинутый</span>
+        </div>
+        <div class="example-body">
+          <p>
+            <strong>Ситуация:</strong> Вы оплачиваете пакет квитанций в сервисе «Квартплата+» одним общим платежом (в рамках одной банковской транзакции). Базовая комиссия сервиса составляет 1% на большинство услуг, однако для отдельных поставщиков установлена повышенная комиссия 2%.
+          </p>
+          <div class="example-grid">
+            <div class="example-column">
+              <h5>Как настроить</h5>
+              <ul>
+                <li>В заголовке группы «Квартплата+» укажите базовую комиссию <b>1%</b>.</li>
+                <li>В строках услуг с повышенной комиссией нажмите кнопку <b>«% Своя комиссия»</b>.</li>
+                <li>В появившейся строке переопределения укажите <b>2%</b>.</li>
+              </ul>
+            </div>
+            <div class="example-column">
+              <h5>Что делает программа</h5>
+              <p>Система объединит все платежи в одну транзакцию, но комиссию для каждого отдельного платежа рассчитает строго по его индивидуальной ставке, точно определив сумму списания и чистую выгоду.</p>
+            </div>
+          </div>
+          <div class="example-result-banner">
+            💰 <b>Результат:</b> Полная финансовая прозрачность — вы видите точную сумму к списанию с учетом разнородных комиссий поставщиков.
+          </div>
+        </div>
+      </div>
+
+      <!-- Пример 4 -->
+      <div class="example-card">
+        <div class="example-header">
+          <div class="example-title">Пример 4. Группа «ЕИРЦ/ЕСКД»: шаг кэшбека, доплата и галка «Фикс.»</div>
+          <span class="difficulty-badge diff-3">Продвинутый</span>
+        </div>
+        <div class="example-body">
+          <p>
+            <strong>Ситуация:</strong> В группе «ЕИРЦ» вы оплачиваете множество услуг (отопление, холодная вода, капремонт, вывоз мусора, электроэнергия, домофон, антенна, радио) одним платежом. Сумма к списанию составляет 3&nbsp;730&nbsp;₽. Банк начисляет 5% кэшбека с шагом 100&nbsp;₽ (кратность 20&nbsp;₽ кэшбека на каждые 400&nbsp;₽ суммы).
+          </p>
+          <p>
+            Без округления 130&nbsp;₽ «хвоста» сгорают без бонуса (начислится только 180&nbsp;₽ кэшбека). Вы готовы доплатить 70&nbsp;₽ авансом, чтобы сумма составила 3&nbsp;800&nbsp;₽ и принесла дополнительные 20&nbsp;₽ кэшбека. При этом вы хотите, чтобы аванс 70&nbsp;₽ упал на счёт отопления или воды, а фиксированные услуги (антенна, домофон, радио) остались строго неизменными.
+          </p>
+          <div class="example-grid">
+            <div class="example-column">
+              <h5>Как настроить</h5>
+              <ul>
+                <li>В строках «Антенна», «Домофон», «Радио» установите флаг <b>«Фикс.»</b>.</li>
+                <li>В строках «Отопление», «Вода», «Электроэнергия» оставьте флаг выключенным.</li>
+              </ul>
+            </div>
+            <div class="example-column">
+              <h5>Что делает программа</h5>
+              <p>Алгоритм выберет наибольший разрешённый коммунальный платёж (отопление) и добавит к нему доплату 70&nbsp;₽. Фиксированные строки останутся копейка в копейку. Итоговый кэшбек составит 200&nbsp;₽.</p>
+            </div>
+          </div>
+          <div class="example-result-banner">
+            💰 <b>Результат:</b> +20 ₽ кэшбека получено, 70 ₽ ушли в аванс на ваш счёт ЖКУ, а фиксированные платежи не изменились.
+          </div>
+        </div>
+      </div>
+
+      <!-- Пример 5 -->
+      <div class="example-card">
+        <div class="example-header">
+          <div class="example-title">Пример 5. Выбор оптимальной карты при частично исчерпанном лимите</div>
+          <span class="difficulty-badge diff-3">Продвинутый</span>
+        </div>
+        <div class="example-body">
+          <p>
+            <strong>Ситуация:</strong> У вас есть две карты с одинаковой ставкой кэшбека <b>5%</b>:
+          </p>
+          <ul>
+            <li><b>Карта 1:</b> остаток лимита <b>225&nbsp;₽</b> кэшбека (ёмкость 4&nbsp;500&nbsp;₽ трат, так как лимит почти израсходован).</li>
+            <li><b>Карта 2:</b> лимит <b>1&nbsp;000&nbsp;₽</b> кэшбека (ёмкость 20&nbsp;000&nbsp;₽ трат).</li>
+          </ul>
+          <p>
+            Сумма счетов к оплате после предложенных программой доплат, комиссий и округлений составляет <b>18&nbsp;000&nbsp;₽</b>.
+          </p>
+          <div class="example-grid">
+            <div class="example-column">
+              <h5>Нерациональное дробление</h5>
+              <p>Попытаться задействовать Карту 1 на 4&nbsp;500&nbsp;₽, а остаток 13&nbsp;500&nbsp;₽ перенести на Карту 2. Это вынуждает совершать две отдельные оплаты и дробить группу счетов.</p>
+            </div>
+            <div class="example-column">
+              <h5>Решение Cashback Optimizer</h5>
+              <p>Программа стремится минимизировать число используемых карт и не дробить платежи. Вся сумма <b>18&nbsp;000&nbsp;₽ целиком уйдёт на Карту 2</b>, которая полностью покроет платежи за одну операцию и принесёт 900&nbsp;₽ кэшбека.</p>
+            </div>
+          </div>
+          <div class="example-result-banner">
+            💰 <b>Результат:</b> Оплата одним платежом по одной карте и начисление полного кэшбека 900 ₽ без лишней рутины.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Раздел 4: Лайфхаки и советы -->
+    <section id="tips">
+      <h2><span class="step-num">4</span> Полезные советы и лайфхаки</h2>
+
+      <div class="feature-grid">
+        <div class="feature-card">
+          <div class="feature-card-title">📱 Установка как приложение (PWA)</div>
+          <p>Вы можете установить Cashback Optimizer на экран смартфона или рабочий стол ПК через меню браузера («Установить приложение»). Программа работает даже без интернета!</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-card-title">💾 Экспорт и резервное копирование</div>
+          <p>Используйте кнопку <b>«Экспорт»</b> в верхней панели, чтобы скачать файл с вашими картами и счетами. Его можно легко перенести на другое устройство через <b>«Импорт»</b>.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-card-title">📄 Выгрузка отчёта расчёта</div>
+          <p>После расчёта нажмите <b>«Выгрузить результат»</b>, чтобы сохранить детальный JSON-отчёт со всеми транзакциями и суммами списаний.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-card-title">📋 Удобная оплата</div>
+          <p>Держите вкладку «Расчёт» открытой на телефоне или компьютере: кликайте на иконку копирования рядом с суммой и сразу вставляйте её в форму оплаты банка.</p>
+        </div>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <p>Cashback Optimizer &copy; 2026. Максимизируйте вашу финансовую выгоду каждый месяц.</p>
+    </footer>
+
+  </main>
+
+  <script>
+    const themeToggle = document.getElementById('themeToggle');
+    const themeIcon = document.getElementById('themeIcon');
+    const themeText = document.getElementById('themeText');
+
+    function setTheme(theme) {
+      document.documentElement.setAttribute('data-theme', theme);
+      localStorage.setItem('cashback-optimizer-theme', theme);
+      if (theme === 'dark') {
+        themeIcon.textContent = '☀️';
+        themeText.textContent = 'Светлая тема';
+      } else {
+        themeIcon.textContent = '🌙';
+        themeText.textContent = 'Тёмная тема';
+      }
+    }
+
+    const savedTheme = localStorage.getItem('cashback-optimizer-theme') ||
+      (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+    setTheme(savedTheme);
+
+    themeToggle.addEventListener('click', () => {
+      const current = document.documentElement.getAttribute('data-theme') || 'dark';
+      setTheme(current === 'dark' ? 'light' : 'dark');
+    });
+  </script>
+
+</body>
+</html>

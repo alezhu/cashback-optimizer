@@ -8,6 +8,9 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      workbox: {
+        navigateFallbackDenylist: [/^\/docs/],
+      },
       manifest: {
         name: 'Cashback Optimizer',
         short_name: 'Cashback',
