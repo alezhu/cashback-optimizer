@@ -3,7 +3,44 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark light" />
     <title>Раскладка платежей по картам</title>
+    <script>
+      (function () {
+        try {
+          var saved = localStorage.getItem('cashback-optimizer-theme');
+          var theme =
+            saved === 'light' || saved === 'dark'
+              ? saved
+              : window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches
+                ? 'light'
+                : 'dark';
+          document.documentElement.setAttribute('data-theme', theme);
+        } catch (e) {}
+      })();
+    </script>
+    <style>
+      :root {
+        --bg: #0f1720;
+        --text: #e7e2d5;
+        color-scheme: dark light;
+      }
+      [data-theme="light"] {
+        --bg: #f8fafc;
+        --text: #1e293b;
+        color-scheme: light;
+      }
+      [data-theme="dark"] {
+        --bg: #0f1720;
+        --text: #e7e2d5;
+        color-scheme: dark;
+      }
+      html, body {
+        background-color: var(--bg);
+        color: var(--text);
+        margin: 0;
+      }
+    </style>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link
       href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap"

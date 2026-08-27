@@ -69,7 +69,6 @@ body {
   background: var(--bg);
   color: var(--text);
   font-family: 'IBM Plex Sans', system-ui, sans-serif;
-  transition: background 0.15s ease, color 0.15s ease;
 }
 
 .mono { font-family: 'IBM Plex Mono', monospace; }

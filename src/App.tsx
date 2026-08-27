@@ -19,8 +19,8 @@ const STATE_VERSION = 1;
 
 export default function App() {
   const [tab, setTab] = useState<TabId>('cards');
-  const [cards, setCards] = useState<Card[]>(seedCards);
-  const [groups, setGroups] = useState<Group[]>(seedGroups);
+  const [cards, setCards] = useState<Card[]>([]);
+  const [groups, setGroups] = useState<Group[]>([]);
   // Допустимое превышение целевой суммы карты, ₽ (см. allocationService.allocate).
   const [tolerance, setTolerance] = useState<FormNumber>(100);
   // Какой алгоритм использовать: быстрая эвристика или полный перебор.
@@ -32,7 +32,7 @@ export default function App() {
   // Доп. информация о последнем расчёте полным перебором
   const [exactInfo, setExactInfo] = useState<{ optimal: boolean; nodesExplored: number } | null>(null);
   // Какие группы сейчас развёрнуты во вкладке «Группы»
-  const [openGroups, setOpenGroups] = useState<Set<number>>(() => new Set(groups.map((g) => g.id)));
+  const [openGroups, setOpenGroups] = useState<Set<number>>(() => new Set());
   // Пока не завершилась первая попытка чтения из IndexedDB, не пишем в неё
   const [loaded, setLoaded] = useState(false);
 
@@ -66,10 +66,24 @@ export default function App() {
           setGroups(saved.groups);
           setTolerance(saved.tolerance);
           setOpenGroups(new Set(saved.groups.map((g) => g.id)));
+        } else {
+          const initialCards = seedCards();
+          const initialGroups = seedGroups();
+          syncIdCounter(initialCards, initialGroups);
+          setCards(initialCards);
+          setGroups(initialGroups);
+          setOpenGroups(new Set(initialGroups.map((g) => g.id)));
         }
         setLoaded(true);
       })
       .catch(() => {
+        if (cancelled) return;
+        const initialCards = seedCards();
+        const initialGroups = seedGroups();
+        syncIdCounter(initialCards, initialGroups);
+        setCards(initialCards);
+        setGroups(initialGroups);
+        setOpenGroups(new Set(initialGroups.map((g) => g.id)));
         setLoaded(true);
       });
     return () => {
@@ -266,6 +280,26 @@ export default function App() {
     setResults(null);
     setExactInfo(null);
   };
+
+  if (!loaded) {
+    return (
+      <div className="app">
+        <div className="header">
+          <div>
+            <h1>Раскладка платежей по картам</h1>
+            <p>Максимизация кэшбека при оплате несколькими картами</p>
+          </div>
+          <div className="header-actions">
+            <button className="theme-toggle-btn" onClick={toggleTheme} title="Сменить тему оформления">
+              {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
+              {theme === 'dark' ? 'Светлая тема' : 'Тёмная тема'}
+            </button>
+            <div className="badge">v{__APP_VERSION__}</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="app">
