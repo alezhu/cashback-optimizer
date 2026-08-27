@@ -38,16 +38,17 @@
 
 * **Фреймворк**: React 19 (`react`, `react-dom`)
 * **Язык**: TypeScript 7.x (строгий режим)
-* **Сборщик**: Vite 8 (`@vitejs/plugin-react`)
+* **Сборщик**: Vite 8 (`@vitejs/plugin-react`, `vite-plugin-pwa`)
 * **Тестирование**: Vitest 4.x
 * **Иконки**: `lucide-react`
 * **Хранилище**: `idb` (IndexedDB)
+* **Многопоточность**: Web Workers (фоновый перебор `exactAllocation.worker.ts`)
 * **Пакетный менеджер**: `pnpm`
 
 ### Команды:
 * `pnpm test` — запуск unit- и интеграционных тестов через Vitest.
 * `pnpm run typecheck` — проверка типов через `tsc --noEmit`.
-* `pnpm run build` — проверка типов + сборка в `dist/`.
+* `pnpm run build` — проверка типов + сборка в `dist/` (включая PWA и Service Worker).
 * `pnpm run dev` — локальный сервер разработки Vite.
 * `pnpm run preview` — запуск превью собранного бандла.
 
@@ -59,16 +60,16 @@
 
 ```
 [UI / Form Input / IndexedDB / JSON]
-  Payment { amount: number | '', commissionOverride: number | '' }
-  Group   { commission: number | '', minCommission: number | '', ... }
-  Card    { rate: number | '', limit: number | '', roundTo: number | '' }
+  Payment { amount: number | '', commissionOverride: number | '', active?: boolean }
+  Group   { commission: number | '', minCommission: number | '', active?: boolean, ... }
+  Card    { rate: number | '', limit: number | '', roundTo: number | '', active?: boolean }
         │
         │ normalize.ts (cleanCard, cleanGroup, cleanPayment)
         ▼
 [Calculation Layer (Pure Math)]
-  CleanPayment { amount: number, commissionOverride: number | null }
-  CleanGroup   { commission: number, minCommission: number | null, ... }
-  CleanCard    { rate: number, limit: number, roundTo: number }
+  CleanPayment { amount: number, commissionOverride: number | null, active: boolean }
+  CleanGroup   { commission: number, minCommission: number | null, active: boolean, ... }
+  CleanCard    { rate: number, limit: number, roundTo: number, active: boolean }
 ```
 
 ---
@@ -78,8 +79,11 @@
 ```
 src/
 ├── types.ts                      # Единый источник всех типов интерфейса и расчетов
-├── styles.css                    # Стилизация (темная тема, CSS-переменные)
-├── App.tsx                       # Главный контейнер состояния, IndexedDB-эффекты, переключение табов
+├── styles.css                    # Стилизация (тёмная и светлая темы, CSS-переменные)
+├── App.tsx                       # Главный контейнер состояния, темы, IndexedDB-эффекты, переключение табов
+│
+├── workers/
+│   └── exactAllocation.worker.ts # Фоновый Web Worker для точного решателя exactAllocate()
 │
 ├── services/
 │   ├── normalize.ts              # Конвертеры Card/Group/Payment -> CleanCard/CleanGroup/CleanPayment
@@ -103,16 +107,16 @@ src/
     ├── DataToolbar.tsx           # Кнопки экспорта/импорта конфигурации
     ├── InfoNote.tsx              # Информационный блок с иконкой
     ├── cards/
-    │   ├── CardsTab.tsx          # Список карт, добавление, кнопки перемещения
-    │   └── CardRow.tsx           # Редактирование параметров одной карты
+    │   ├── CardsTab.tsx          # Список карт, добавление, кнопки перемещения, Drag-and-Drop
+    │   └── CardRow.tsx           # Редактирование параметров одной карты, дублирование, Drag Handle
     ├── groups/
-    │   ├── GroupsTab.tsx         # Список групп
-    │   ├── GroupPanel.tsx        # Аккордеон группы, настройки комиссий
-    │   └── PaymentRow.tsx        # Строка платежа (название, сумма, override комиссии)
+    │   ├── GroupsTab.tsx         # Список групп, добавление, дублирование, Drag-and-Drop
+    │   ├── GroupPanel.tsx        # Аккордеон группы, настройки комиссий, Drag Handle
+    │   └── PaymentRow.tsx        # Строка платежа (название, сумма, override комиссии, активность)
     └── calc/
-        ├── CalcTab.tsx           # Запуск расчета, переключатель режимов, общий итог
+        ├── CalcTab.tsx           # Запуск расчета, аналитика (чистая выгода, комиссии), бенчмарк vs 1%
         ├── CardResult.tsx        # Блок распределения по конкретной карте
-        └── TransactionBlock.tsx  # Детализация одной транзакции (платежи, надбавка, кэшбек)
+        └── TransactionBlock.tsx  # Детализация одной транзакции (платежи, копирование суммы, кэшбек)
 ```
 
 ---
