@@ -169,12 +169,12 @@ export default function CalcTab({
             </div>
             <div className="analytics-card">
               <div className="analytics-card-title">
-                Доплата за шаг
+                Доплата
                 <button
                   type="button"
                   className="btn-help-icon"
                   onClick={() => setShowStepHelp(true)}
-                  title="Что такое доплата за шаг?"
+                  title="Что такое доплата?"
                 >
                   <CircleHelp size={14} />
                 </button>
@@ -215,14 +215,14 @@ export default function CalcTab({
         </div>
       )}
 
-      {/* Модальное окно с пояснением «Доплата за шаг» */}
+      {/* Модальное окно с пояснением «Доплата» */}
       {showStepHelp && (
         <div className="modal-overlay" onClick={() => setShowStepHelp(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <div className="modal-title">
                 <CircleHelp size={18} className="modal-icon" />
-                Что такое «Доплата за шаг»?
+                Что такое «Доплата»?
               </div>
               <button
                 className="btn-icon"
@@ -235,7 +235,7 @@ export default function CalcTab({
 
             <div className="modal-body">
               <p>
-                <strong>Доплата за шаг</strong> — это сумма, на которую алгоритм предлагает <strong>увеличить платёж (внести авансом)</strong>, чтобы округлить сумму банковской транзакции вверх до ближайшего полного шага начисления кэшбека.
+                <strong>Доплата</strong> — это сумма, на которую алгоритм предлагает <strong>увеличить платёж (внести авансом)</strong>, чтобы округлить сумму банковской транзакции вверх до ближайшего полного шага начисления кэшбека.
               </p>
 
               <div className="modal-section">
