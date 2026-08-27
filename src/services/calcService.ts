@@ -10,12 +10,27 @@ export const round2 = (n: number): number => Math.round((n + Number.EPSILON) * 1
 
 /** Эффективная ставка комиссии для платежа: override платежа, иначе — комиссия группы. */
 export function paymentCommissionRate(payment: CleanPayment, group: CleanGroup): number {
-  return payment.commissionOverride ?? group.commission;
+  return payment.commissionOverride != null ? payment.commissionOverride : group.commission;
+}
+
+/** Округление комиссии до целого: override платежа, иначе — настройка группы. */
+export function paymentRoundCommission(payment: CleanPayment, group: CleanGroup): boolean {
+  return payment.roundCommissionOverride != null ? payment.roundCommissionOverride : group.roundCommission;
+}
+
+/** Нижняя граница комиссии для платежа: override платежа, иначе — настройка группы. */
+export function paymentMinCommission(payment: CleanPayment, group: CleanGroup): number | null {
+  return payment.minCommissionOverride != null ? payment.minCommissionOverride : group.minCommission;
+}
+
+/** Верхняя граница комиссии для платежа: override платежа, иначе — настройка группы. */
+export function paymentMaxCommission(payment: CleanPayment, group: CleanGroup): number | null {
+  return payment.maxCommissionOverride != null ? payment.maxCommissionOverride : group.maxCommission;
 }
 
 /** true, если платёж действительно использует свою ставку, а не ставку группы. */
 export function isRateOverridden(payment: CleanPayment): boolean {
-  return payment.commissionOverride !== null;
+  return payment.commissionOverride != null;
 }
 
 /** Сырая (до min/max/округления) сумма комиссии. */
@@ -24,20 +39,25 @@ function rawCommission(payment: CleanPayment, group: CleanGroup): number {
   return payment.amount * (rate / 100);
 }
 
-/** true, если сумма комиссии была подрезана минимумом или максимумом группы. */
+/** true, если сумма комиссии была подрезана минимумом или максимумом. */
 export function isCommissionClamped(payment: CleanPayment, group: CleanGroup): boolean {
   const amt = rawCommission(payment, group);
-  if (group.minCommission !== null && amt < group.minCommission) return true;
-  if (group.maxCommission !== null && amt > group.maxCommission) return true;
+  const minC = paymentMinCommission(payment, group);
+  const maxC = paymentMaxCommission(payment, group);
+  if (minC !== null && amt < minC) return true;
+  if (maxC !== null && amt > maxC) return true;
   return false;
 }
 
 /** Итоговая сумма комиссии по платежу с учётом override/min/max/округления. */
 export function commissionAmount(payment: CleanPayment, group: CleanGroup): number {
   let amt = rawCommission(payment, group);
-  if (group.minCommission !== null) amt = Math.max(amt, group.minCommission);
-  if (group.maxCommission !== null) amt = Math.min(amt, group.maxCommission);
-  if (group.roundCommission) amt = Math.round(amt);
+  const minC = paymentMinCommission(payment, group);
+  const maxC = paymentMaxCommission(payment, group);
+  const roundC = paymentRoundCommission(payment, group);
+  if (minC !== null) amt = Math.max(amt, minC);
+  if (maxC !== null) amt = Math.min(amt, maxC);
+  if (roundC) amt = Math.round(amt);
   return amt;
 }
 
@@ -53,12 +73,13 @@ export function billedOf(payment: CleanPayment, group: CleanGroup): number {
  *
  * - Если комиссия округляется до целого рубля, небольшое увеличение суммы платежа
  *   (единицы рублей) на практике не меняет округлённую комиссию — считаем фактор 1.
- * - Если комиссия уже упирается в min/max группы, она не меняется при малом
+ * - Если комиссия уже упирается в min/max, она не меняется при малом
  *   увеличении суммы — тоже фактор 1.
  * - Иначе комиссия линейна от суммы: фактор = 1 / (1 + ставка/100).
  */
 export function marginalFactor(payment: CleanPayment, group: CleanGroup): number {
-  if (group.roundCommission) return 1;
+  const roundC = paymentRoundCommission(payment, group);
+  if (roundC) return 1;
   if (isCommissionClamped(payment, group)) return 1;
   const rate = paymentCommissionRate(payment, group);
   return 1 / (1 + rate / 100);
@@ -84,8 +105,12 @@ export function chunkBilled(chunk: Chunk): number {
  */
 function pickClosestSubset(weights: number[], target: number, cap: number): number[] {
   const n = weights.length;
+  if (n === 0) return [];
+  if (!Number.isFinite(cap) || cap >= 1e9) {
+    return Array.from({ length: n }, (_, i) => i);
+  }
   const capInt = Math.max(0, Math.floor(cap));
-  if (n === 0 || capInt <= 0) return [];
+  if (capInt <= 0) return [];
 
   const w = weights.map((x) => Math.max(0, Math.round(x)));
 

@@ -3,14 +3,14 @@
 // (CleanCard/CleanGroup/CleanPayment, где всё уже number|null).
 import type { Card, Group, Payment, FormNumber, CleanCard, CleanGroup, CleanPayment } from '../types';
 
-function toNumber(v: FormNumber, fallback = 0): number {
-  if (v === '') return fallback;
+function toNumber(v: FormNumber | null | undefined, fallback = 0): number {
+  if (v === '' || v === null || v === undefined) return fallback;
   const n = Number(v);
   return Number.isFinite(n) ? n : fallback;
 }
 
-function toNumberOrNull(v: FormNumber): number | null {
-  if (v === '') return null;
+function toNumberOrNull(v: FormNumber | null | undefined): number | null {
+  if (v === '' || v === null || v === undefined) return null;
   const n = Number(v);
   return Number.isFinite(n) ? n : null;
 }
@@ -34,7 +34,10 @@ export function cleanPayment(p: Payment): CleanPayment {
     active: p.active !== false,
     noIncrease: Boolean(p.noIncrease),
     amount: toNumber(p.amount),
-    commissionOverride: toNumberOrNull(p.commissionOverride),
+    commissionOverride: p.commissionOverride !== undefined ? toNumberOrNull(p.commissionOverride) : null,
+    roundCommissionOverride: typeof p.roundCommissionOverride === 'boolean' ? p.roundCommissionOverride : null,
+    minCommissionOverride: p.minCommissionOverride !== undefined ? toNumberOrNull(p.minCommissionOverride) : null,
+    maxCommissionOverride: p.maxCommissionOverride !== undefined ? toNumberOrNull(p.maxCommissionOverride) : null,
   };
 }
 

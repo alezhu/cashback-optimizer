@@ -26,8 +26,14 @@ export interface Payment {
   /** Запрещено ли увеличивать сумму платежа при округлении кэшбека (по умолчанию false). */
   noIncrease?: boolean;
   amount: FormNumber;
-  /** Своя ставка комиссии для этого платежа. '' = использовать комиссию группы. */
-  commissionOverride: FormNumber;
+  /** Своя ставка комиссии для этого платежа. null / '' = использовать комиссию группы. */
+  commissionOverride?: FormNumber | null;
+  /** Своё округление комиссии до целого рубля. null / undefined = как в группе. */
+  roundCommissionOverride?: boolean | null;
+  /** Своя нижняя граница комиссии, ₽. null / '' = как в группе. */
+  minCommissionOverride?: FormNumber | null;
+  /** Своя верхняя граница комиссии, ₽. null / '' = как в группе. */
+  maxCommissionOverride?: FormNumber | null;
 }
 
 export interface Group {
@@ -75,6 +81,9 @@ export interface CleanPayment {
   noIncrease: boolean;
   amount: number;
   commissionOverride: number | null;
+  roundCommissionOverride: boolean | null;
+  minCommissionOverride: number | null;
+  maxCommissionOverride: number | null;
 }
 
 export interface CleanGroup {
