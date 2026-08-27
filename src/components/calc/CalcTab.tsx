@@ -1,9 +1,10 @@
 // Вкладка «Расчёт»: выбор алгоритма (эвристика/полный перебор), настройка
 // допустимого превышения (только для эвристики), кнопка запуска расчёта
 // и вывод результата по каждой карте + общий итог.
-import { Calculator, Zap, Search } from 'lucide-react';
+import { Calculator, Zap, Search, FileDown } from 'lucide-react';
 import CardResult from './CardResult';
 import { fmt } from '../../utils/format';
+import { exportResultsToFile } from '../../services/exportImport';
 import type { CardAllocationResult, FormNumber, CalcMode } from '../../types';
 
 interface CalcTabProps {
@@ -115,6 +116,13 @@ export default function CalcTab({
               <span>
                 Итого кэшбек: <b className="cb">{fmt(grandTotal.cashback)} ₽</b>
               </span>
+              <button
+                className="btn"
+                onClick={() => exportResultsToFile(results!, mode)}
+                title="Скачать результат расчёта в JSON-файл"
+              >
+                <FileDown size={14} /> Выгрузить результат
+              </button>
             </div>
           )}
         </div>

@@ -83,7 +83,7 @@ export default function App() {
   // ---------- карты ----------
   const updateCard = (id: number, patch: Partial<Card>) =>
     setCards((cs) => cs.map((c) => (c.id === id ? { ...c, ...patch } : c)));
-  const addCard = () => setCards((cs) => [...cs, { id: nextId(), name: `Карта ${cs.length + 1}`, rate: 10, limit: 1000 }]);
+  const addCard = () => setCards((cs) => [...cs, { id: nextId(), name: `Карта ${cs.length + 1}`, rate: 10, limit: 1000, roundTo: 0 }]);
   const removeCard = (id: number) => setCards((cs) => cs.filter((c) => c.id !== id));
   // Перемещение карты вверх/вниз по списку — порядок важен для алгоритма
   // распределения (последняя карта в списке — "остаточная").
