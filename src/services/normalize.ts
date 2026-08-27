@@ -19,6 +19,7 @@ export function cleanCard(card: Card): CleanCard {
   return {
     id: card.id,
     name: card.name,
+    active: card.active !== false,
     rate: toNumber(card.rate),
     limit: toNumber(card.limit),
     // Старые сохранённые данные без поля roundTo дадут 0 (поведение не меняется).

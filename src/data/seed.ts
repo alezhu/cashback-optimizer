@@ -7,9 +7,9 @@ import type { Card, Group, Payment } from '../types';
 // Три карты с кэшбеком 10% и лимитом 1000 ₽ — как в исходном примере.
 export function seedCards(): Card[] {
   return [
-    { id: nextId(), name: 'Карта 1', rate: 10, limit: 1000, roundTo: 0 },
-    { id: nextId(), name: 'Карта 2', rate: 10, limit: 1000, roundTo: 0 },
-    { id: nextId(), name: 'Карта 3', rate: 10, limit: 1000, roundTo: 0 },
+    { id: nextId(), name: 'Карта 1', active: true, rate: 10, limit: 1000, roundTo: 0 },
+    { id: nextId(), name: 'Карта 2', active: true, rate: 10, limit: 1000, roundTo: 0 },
+    { id: nextId(), name: 'Карта 3', active: true, rate: 10, limit: 1000, roundTo: 0 },
   ];
 }
 

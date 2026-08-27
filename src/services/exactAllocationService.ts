@@ -3,10 +3,11 @@
 // комбинацию.
 //
 // Критерии оптимизации (в порядке приоритета):
-// 1. Максимизация начисленного кэшбека (с учётом процентных ставок и лимитов карт).
-// 2. Минимизация числа задействованных карт (Bin Packing, устранение бессмысленного дробления).
-// 3. Минимизация искусственной наценки округления (roundedSum - billedSum).
-// 4. Сохранение целостности групп (минимизация разбиения групп на несколько транзакций).
+// 1. Учитываются только активные карты (card.active !== false).
+// 2. Максимизация начисленного кэшбека (с учётом ставок и лимитов; limit <= 0 = без лимита).
+// 3. Минимизация числа задействованных карт (Bin Packing, устранение бессмысленного дробления).
+// 4. Минимизация искусственной наценки округления (roundedSum - billedSum).
+// 5. Сохранение целостности групп (минимизация разбиения групп на несколько транзакций).
 import { makeTransaction, allocate } from './allocationService';
 import { billedOf } from './calcService';
 import type { CleanCard, CleanGroup, CleanPayment, CardAllocationResult } from '../types';
@@ -40,7 +41,9 @@ export function exactAllocate(cards: CleanCard[], groups: CleanGroup[]): ExactRe
   const n = flat.length;
   const k = cards.length;
 
-  if (n === 0 || k === 0) {
+  const activeCards = cards.filter((c) => c.active);
+
+  if (n === 0 || k === 0 || activeCards.length === 0) {
     return { results: cards.map((c) => ({ card: c, transactions: [] })), optimal: true, nodesExplored: 0 };
   }
 
@@ -48,8 +51,7 @@ export function exactAllocate(cards: CleanCard[], groups: CleanGroup[]): ExactRe
   // принимаются раньше и отсечение веток работает эффективнее.
   flat.sort((a, b) => billedOf(b.payment, b.group) - billedOf(a.payment, a.group));
 
-  // Суффиксные суммы billed-значений — сколько ещё максимум могут добавить
-  // ещё не распределённые платежи.
+  // Суффиксные суммы billed-значений
   const suffixSum = new Array(n + 1).fill(0);
   for (let i = n - 1; i >= 0; i--) {
     suffixSum[i] = suffixSum[i + 1] + billedOf(flat[i].payment, flat[i].group);
@@ -76,6 +78,8 @@ export function exactAllocate(cards: CleanCard[], groups: CleanGroup[]): ExactRe
 
     perCard.forEach((byGroup, cardIdx) => {
       const card = cards[cardIdx];
+      if (!card.active) return; // неактивные карты не приносят кэшбек
+
       let cardCashback = 0;
       let cardHasTx = false;
 
@@ -93,8 +97,9 @@ export function exactAllocate(cards: CleanCard[], groups: CleanGroup[]): ExactRe
         cardsUsed++;
       }
 
-      if (card.rate > 0 && card.limit > 0) {
-        totalCashback += Math.min(cardCashback, card.limit);
+      if (card.rate > 0) {
+        // limit > 0 -> ограничен лимитом; limit <= 0 -> без лимита
+        totalCashback += (card.limit > 0 ? Math.min(cardCashback, card.limit) : cardCashback);
       }
     });
 
@@ -151,22 +156,19 @@ export function exactAllocate(cards: CleanCard[], groups: CleanGroup[]): ExactRe
 
   let bestAssignment: number[] = heuristicAssignment.every((c) => c >= 0)
     ? heuristicAssignment.slice()
-    : new Array(n).fill(0);
+    : new Array(n).fill(cards.findIndex((c) => c.active));
   let bestScore = evaluate(bestAssignment).score;
 
-  // Суммарный потолок кэшбека всех доступных карт
-  const globalCap = cards.reduce((s, c) => s + (c.rate > 0 && c.limit > 0 ? c.limit : 0), 0);
+  // Суммарный потолок кэшбека
+  const hasUnlimitedCard = cards.some((c) => c.active && c.rate > 0 && c.limit <= 0);
+  const globalCap = hasUnlimitedCard
+    ? Infinity
+    : cards.reduce((s, c) => s + (c.active && c.rate > 0 && c.limit > 0 ? c.limit : 0), 0);
 
   const assignment = new Array(n).fill(-1);
   const runningRaw = new Array(k).fill(0);
   let nodesExplored = 0;
   let truncated = false;
-
-  // Предварительно определяем активные и остаточные карты
-  const totalPositiveLimitCap = cards.reduce(
-    (sum, c) => sum + (c.rate > 0 && c.limit > 0 ? (c.limit * 100) / c.rate : 0),
-    0
-  );
 
   function dfs(i: number): void {
     if (truncated) return;
@@ -193,22 +195,28 @@ export function exactAllocate(cards: CleanCard[], groups: CleanGroup[]): ExactRe
     let totalRemainingCap = 0;
     let maxRate = 0;
     let cardsUsedSoFar = 0;
+    let hasUnlimited = false;
 
     for (let c = 0; c < k; c++) {
       const card = cards[c];
       if (runningRaw[c] > 0) {
         cardsUsedSoFar++;
       }
-      if (card.rate <= 0 || card.limit <= 0) continue;
+      if (!card.active || card.rate <= 0) continue;
       if (card.rate > maxRate) maxRate = card.rate;
       const cbUpper = Math.ceil(runningRaw[c] * (card.rate / 100));
-      currentEarned += Math.min(cbUpper, card.limit);
-      const cbLower = Math.floor(runningRaw[c] * (card.rate / 100));
-      totalRemainingCap += Math.max(0, card.limit - cbLower);
+      if (card.limit > 0) {
+        currentEarned += Math.min(cbUpper, card.limit);
+        const cbLower = Math.floor(runningRaw[c] * (card.rate / 100));
+        totalRemainingCap += Math.max(0, card.limit - cbLower);
+      } else {
+        currentEarned += cbUpper;
+        hasUnlimited = true;
+      }
     }
 
     const potentialAdditional = maxRate > 0 ? Math.ceil(remaining * (maxRate / 100)) : 0;
-    const additionalBound = Math.min(potentialAdditional, totalRemainingCap);
+    const additionalBound = hasUnlimited ? potentialAdditional : Math.min(potentialAdditional, totalRemainingCap);
     const extraCardsPenalty = Math.max(0, cardsUsedSoFar - 1) * 10;
     const bound = currentEarned + additionalBound + 2 - extraCardsPenalty;
 
@@ -216,36 +224,26 @@ export function exactAllocate(cards: CleanCard[], groups: CleanGroup[]): ExactRe
 
     const billed = billedOf(flat[i].payment, flat[i].group);
 
-    // Умный порядок перебора карт:
-    // 1. Уже используемые карты (по убыванию ставки) — поощряет упаковку в минимальное число карт
-    // 2. Пустые активные карты
-    // 3. Остаточные карты (limit <= 0) — только если суммарная ёмкость активных карт исчерпана
+    // Перебираем только АКТИВНЫЕ карты:
+    // 1. Уже используемые активные карты (по убыванию ставки)
+    // 2. Пустые активные карты (с отсечением симметрии First Empty Bin)
     const candidateCards: number[] = [];
     const emptyActiveSeen = new Set<string>();
 
-    // Сначала непустые карты
     for (let c = 0; c < k; c++) {
-      if (runningRaw[c] > 0) {
+      if (cards[c].active && runningRaw[c] > 0) {
         candidateCards.push(c);
       }
     }
     candidateCards.sort((a, b) => cards[b].rate - cards[a].rate || runningRaw[b] - runningRaw[a]);
 
-    // Затем пустые карты (с отсечением симметрии First Empty Bin)
     for (let c = 0; c < k; c++) {
-      if (runningRaw[c] === 0) {
+      if (cards[c].active && runningRaw[c] === 0) {
         const card = cards[c];
-        if (card.limit <= 0 || card.rate <= 0) {
-          // Остаточные карты проверяем только если оставшиеся платежи не влезают в активные карты
-          if (totalPositiveLimitCap < suffixSum[0]) {
-            candidateCards.push(c);
-          }
-        } else {
-          const sig = `${card.rate},${card.limit},${card.roundTo}`;
-          if (!emptyActiveSeen.has(sig)) {
-            emptyActiveSeen.add(sig);
-            candidateCards.push(c);
-          }
+        const sig = `${card.rate},${card.limit},${card.roundTo}`;
+        if (!emptyActiveSeen.has(sig)) {
+          emptyActiveSeen.add(sig);
+          candidateCards.push(c);
         }
       }
     }

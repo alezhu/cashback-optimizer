@@ -18,8 +18,16 @@ function parseFormNumber(raw: string): FormNumber {
 }
 
 export default function CardRow({ card, index, onUpdate, onRemove, onMove }: CardRowProps) {
+  const isActive = card.active !== false;
+
   return (
-    <div className="card-row">
+    <div className={`card-row ${!isActive ? 'card-row-inactive' : ''}`}>
+      <input
+        type="checkbox"
+        checked={isActive}
+        title={isActive ? 'Карта активна (участвует в расчёте)' : 'Карта отключена (не используется в расчёте)'}
+        onChange={(e) => onUpdate(card.id, { active: e.target.checked })}
+      />
       {/* Порядок карт важен для алгоритма расчёта — двигаем вверх/вниз. */}
       <div className="move-btns">
         <button className="btn-icon up-down" onClick={() => onMove(index, -1)}>
@@ -39,6 +47,8 @@ export default function CardRow({ card, index, onUpdate, onRemove, onMove }: Car
       <input
         type="number"
         className="input mono"
+        placeholder="0 (без лимита)"
+        title="Лимит кэшбека в месяц (0 или пусто = без лимита)"
         value={card.limit}
         onChange={(e) => onUpdate(card.id, { limit: parseFormNumber(e.target.value) })}
       />

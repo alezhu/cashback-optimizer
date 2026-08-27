@@ -134,18 +134,22 @@ body {
 /* Cards tab */
 .card-row {
   display: grid;
-  grid-template-columns: 40px 2fr 1fr 1fr 80px 32px;
-  gap: 12px;
+  grid-template-columns: 24px 40px 2fr 1fr 1fr 80px 32px;
+  gap: 10px;
   align-items: center;
   background: var(--panel-2);
   border-radius: 6px;
   padding: 8px 10px;
   margin-bottom: 6px;
+  transition: opacity 0.15s ease;
+}
+.card-row-inactive {
+  opacity: 0.45;
 }
 .card-row-header {
   display: grid;
-  grid-template-columns: 40px 2fr 1fr 1fr 80px 32px;
-  gap: 12px;
+  grid-template-columns: 24px 40px 2fr 1fr 1fr 80px 32px;
+  gap: 10px;
   padding: 0 10px;
   margin-bottom: 6px;
 }
@@ -238,7 +242,8 @@ body {
 .card-result-header h3 { margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 16px; font-weight: 600; color: var(--text-strong); }
 .card-result-stats { display: flex; gap: 20px; font-size: 13px; color: var(--muted); }
 .card-result-stats b { color: var(--text); font-weight: 500; font-family: 'IBM Plex Mono', monospace; }
-.card-result-stats .cb { color: var(--gold); font-weight: 600; }
+.card-result-inactive { opacity: 0.5; }
+.inactive-badge { font-size: 12px; color: var(--muted-2); font-weight: normal; }
 .capped-note { font-size: 11px; color: var(--rust); margin-left: 4px; }
 
 .tx-block { padding: 14px 16px; border-top: 1px solid var(--border); }

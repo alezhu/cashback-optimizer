@@ -43,9 +43,14 @@ export interface Group {
 export interface Card {
   id: number;
   name: string;
+  /** Активна ли карта для расчёта (по умолчанию true). */
+  active?: boolean;
   /** Ставка кэшбека, %. */
   rate: FormNumber;
-  /** Лимит кэшбека по карте, ₽. */
+  /**
+   * Лимит кэшбека по карте, ₽.
+   * 0 или '' = без лимита (не ограничен).
+   */
   limit: FormNumber;
   /**
    * Кратность кэшбека, ₽. 0 = не используется (округление до 10 ₽).
@@ -77,7 +82,9 @@ export interface CleanGroup {
 export interface CleanCard {
   id: number;
   name: string;
+  active: boolean;
   rate: number;
+  /** Лимит кэшбека по карте, ₽. 0 = без лимита (не ограничен). */
   limit: number;
   /** Кратность кэшбека, ₽. 0 = не используется. */
   roundTo: number;

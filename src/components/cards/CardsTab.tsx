@@ -16,11 +16,12 @@ export default function CardsTab({ cards, updateCard, addCard, removeCard, moveC
   return (
     <div className="panel">
       <div className="card-row-header">
+        <div className="field-label" title="Активность карты">Вкл</div>
         <div className="field-label">№</div>
         <div className="field-label">Название карты</div>
         <div className="field-label">Кэшбек, %</div>
-        <div className="field-label">Лимит кэшбека, ₽</div>
-        <div className="field-label">Округл. до, ₽</div>
+        <div className="field-label" title="0 или пусто = без лимита">Лимит, ₽</div>
+        <div className="field-label">Округл., ₽</div>
         <div></div>
       </div>
 

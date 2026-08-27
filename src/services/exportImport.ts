@@ -47,6 +47,7 @@ export function exportResultsToFile(
 
     return {
       name: cr.card.name,
+      active: cr.card.active,
       rate: cr.card.rate,
       limitCashback: cr.card.limit > 0 ? cr.card.limit : null,
       roundTo: cr.card.roundTo > 0 ? cr.card.roundTo : null,
