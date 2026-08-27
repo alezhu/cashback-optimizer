@@ -189,7 +189,7 @@ export default function App() {
               ...g,
               payments: [
                 ...g.payments,
-                { id: nextId(), name: `Платёж ${g.payments.length + 1}`, active: true, amount: 0, commissionOverride: '' },
+                { id: nextId(), name: `Платёж ${g.payments.length + 1}`, active: true, noIncrease: false, amount: 0, commissionOverride: '' },
               ],
             }
           : g

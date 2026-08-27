@@ -23,6 +23,8 @@ export interface Payment {
   name: string;
   /** Включен ли платёж в расчёт (по умолчанию true). */
   active?: boolean;
+  /** Запрещено ли увеличивать сумму платежа при округлении кэшбека (по умолчанию false). */
+  noIncrease?: boolean;
   amount: FormNumber;
   /** Своя ставка комиссии для этого платежа. '' = использовать комиссию группы. */
   commissionOverride: FormNumber;
@@ -70,6 +72,7 @@ export interface CleanPayment {
   id: number;
   name: string;
   active: boolean;
+  noIncrease: boolean;
   amount: number;
   commissionOverride: number | null;
 }

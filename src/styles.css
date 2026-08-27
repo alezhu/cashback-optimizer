@@ -300,7 +300,7 @@ body {
 .group-body { padding: 0 16px 16px; }
 .payment-row-header {
   display: grid;
-  grid-template-columns: 24px 2.4fr 1fr 1fr 28px;
+  grid-template-columns: 24px 2.4fr 1fr 1fr 38px 28px;
   gap: 10px;
   font-size: 11px;
   text-transform: uppercase;
@@ -311,7 +311,7 @@ body {
 }
 .payment-row {
   display: grid;
-  grid-template-columns: 24px 2.4fr 1fr 1fr 28px;
+  grid-template-columns: 24px 2.4fr 1fr 1fr 38px 28px;
   gap: 10px;
   align-items: center;
   background: var(--panel-2);

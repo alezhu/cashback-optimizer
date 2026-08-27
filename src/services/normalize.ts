@@ -32,6 +32,7 @@ export function cleanPayment(p: Payment): CleanPayment {
     id: p.id,
     name: p.name,
     active: p.active !== false,
+    noIncrease: Boolean(p.noIncrease),
     amount: toNumber(p.amount),
     commissionOverride: toNumberOrNull(p.commissionOverride),
   };

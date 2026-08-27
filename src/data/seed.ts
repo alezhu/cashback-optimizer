@@ -20,6 +20,7 @@ function makePayments(amounts: number[]): Payment[] {
     id: nextId(),
     name: `Платёж ${i + 1}`,
     active: true,
+    noIncrease: false,
     amount: a,
     commissionOverride: '',
   }));

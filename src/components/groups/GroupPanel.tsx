@@ -172,6 +172,7 @@ export default function GroupPanel({
             <div>Название платежа</div>
             <div>Сумма, ₽</div>
             <div>Комиссия, % (своя)</div>
+            <div title="Запрет увеличения суммы платежа при округлении кэшбека">Фикс.</div>
             <div></div>
           </div>
 

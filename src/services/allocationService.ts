@@ -37,15 +37,41 @@ export function makeTransaction(chunk: Chunk, card: CleanCard): TransactionResul
   const enteredOriginal = round2(payments.reduce((s, p) => s + p.amount, 0));
   const billedSum = round2(payments.reduce((s, p) => s + billedOf(p, group), 0));
 
+  // Ищем платёж с максимальной суммой среди тех, для которых увеличение НЕ запрещено
+  let adjustIdx = -1;
+  let maxAmt = -1;
+  payments.forEach((p, i) => {
+    if (!p.noIncrease && p.amount > maxAmt) {
+      maxAmt = p.amount;
+      adjustIdx = i;
+    }
+  });
+
+  // Если для всех платежей увеличение запрещено, округление вверх невозможно
+  if (adjustIdx === -1) {
+    const roundedSum = round2(billedSum);
+    const increaseEntered = 0;
+    const factBilledSum = billedSum;
+    const cashback = Math.floor(roundedSum * (card.rate / 100));
+
+    return {
+      group,
+      groupName: group.name,
+      payments,
+      adjustIdx: 0,
+      enteredOriginal,
+      billedSum,
+      roundedSum,
+      increaseEntered,
+      factBilledSum,
+      cashback,
+    };
+  }
+
   const roundedSum = computeRoundedSum(billedSum, card);
   const increaseBilled = round2(roundedSum - billedSum);
 
-  let adjustIdx = 0;
-  payments.forEach((p, i) => {
-    if (p.amount > payments[adjustIdx].amount) adjustIdx = i;
-  });
   const adjustPayment = payments[adjustIdx];
-
   const factor = marginalFactor(adjustPayment, group);
   const increaseEntered = round2(increaseBilled * factor);
 

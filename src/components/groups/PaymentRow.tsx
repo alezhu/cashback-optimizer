@@ -1,5 +1,5 @@
-// Одна строка платежа внутри группы: чекбокс активности, название, сумма
-// и переопределение ставки комиссии.
+// Одна строка платежа внутри группы: чекбокс активности, название, сумма,
+// переопределение ставки комиссии, чекбокс запрета увеличения и удаление.
 import { Trash2 } from 'lucide-react';
 import type { Payment, Group, FormNumber } from '../../types';
 
@@ -39,6 +39,16 @@ export default function PaymentRow({ payment, group, onUpdate, onRemove }: Payme
         title="Переопределить комиссию группы для этого платежа (пусто = как в группе)"
         value={payment.commissionOverride}
         onChange={(e) => onUpdate(payment.id, { commissionOverride: parseFormNumber(e.target.value) })}
+      />
+      <input
+        type="checkbox"
+        checked={payment.noIncrease === true}
+        title={
+          payment.noIncrease
+            ? 'Увеличение суммы запрещено (сумма платежа зафиксирована и не будет увеличиваться при округлении)'
+            : 'Разрешено увеличивать сумму платежа при округлении кэшбека'
+        }
+        onChange={(e) => onUpdate(payment.id, { noIncrease: e.target.checked })}
       />
       <button className="btn-icon" onClick={() => onRemove(payment.id)} title="Удалить платёж">
         <Trash2 size={14} />
