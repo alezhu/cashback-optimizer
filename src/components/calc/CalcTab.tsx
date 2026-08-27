@@ -1,6 +1,7 @@
 // Вкладка «Расчёт»: выбор алгоритма, кнопка запуска, вывод результатов по картам,
 // финансовая аналитика (чистая выгода, комиссии, наценки), бенчмарк (vs 1%) и экспорт.
-import { Calculator, Zap, Search, FileDown, TrendingUp } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Calculator, Zap, Search, FileDown, TrendingUp, CircleHelp, X } from 'lucide-react';
 import CardResult from './CardResult';
 import { fmt } from '../../utils/format';
 import { exportResultsToFile } from '../../services/exportImport';
@@ -27,6 +28,20 @@ export default function CalcTab({
   isCalculating,
   exactInfo,
 }: CalcTabProps) {
+  const [showStepHelp, setShowStepHelp] = useState(false);
+
+  // Закрытие модального окна по Escape
+  useEffect(() => {
+    if (!showStepHelp) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setShowStepHelp(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showStepHelp]);
+
   // Финансовая аналитика и агрегаты
   const analytics = results
     ? (() => {
@@ -153,7 +168,17 @@ export default function CalcTab({
               <div className="analytics-card-value rust">{fmt(analytics.totalCommission)} ₽</div>
             </div>
             <div className="analytics-card">
-              <div className="analytics-card-title">Доплата за шаг</div>
+              <div className="analytics-card-title">
+                Доплата за шаг
+                <button
+                  type="button"
+                  className="btn-help-icon"
+                  onClick={() => setShowStepHelp(true)}
+                  title="Что такое доплата за шаг?"
+                >
+                  <CircleHelp size={14} />
+                </button>
+              </div>
               <div className="analytics-card-value">{fmt(analytics.totalIncrease)} ₽</div>
             </div>
             <div className="analytics-card">
@@ -186,6 +211,60 @@ export default function CalcTab({
             >
               <FileDown size={14} /> Выгрузить результат
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Модальное окно с пояснением «Доплата за шаг» */}
+      {showStepHelp && (
+        <div className="modal-overlay" onClick={() => setShowStepHelp(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <div className="modal-title">
+                <CircleHelp size={18} className="modal-icon" />
+                Что такое «Доплата за шаг»?
+              </div>
+              <button
+                className="btn-icon"
+                onClick={() => setShowStepHelp(false)}
+                title="Закрыть"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="modal-body">
+              <p>
+                <strong>Доплата за шаг</strong> — это сумма, на которую алгоритм предлагает <strong>увеличить платёж (внести авансом)</strong>, чтобы округлить сумму банковской транзакции вверх до ближайшего полного шага начисления кэшбека.
+              </p>
+
+              <div className="modal-section">
+                <h4>💡 Почему это выгодно?</h4>
+                <p>
+                  Банки начисляют кэшбек только за полные шаги суммы (например, по 1 ₽ за каждые 100 ₽). Без округления «хвост» суммы (например, 80 ₽ из 1 980 ₽) сгорает без кэшбека. Доплатив всего 20 ₽, вы получаете следующий полный рубль кэшбека.
+                </p>
+              </div>
+
+              <div className="modal-section">
+                <h4>💳 Куда идут эти деньги?</h4>
+                <p>
+                  Деньги не сгорают и не уходят банку: доплата зачисляется поставщику услуги (ЖКХ, интернет, мобильная связь) в качестве <strong>аванса (предоплаты на будущий месяц)</strong> на ваш лицевой счёт.
+                </p>
+              </div>
+
+              <div className="modal-section">
+                <h4>🔒 Как запретить доплату?</h4>
+                <p>
+                  Если вы не хотите переплачивать по конкретному платежу (например, точный налог или фиксированный разовый счёт), отметьте чекбокс <strong>«Фикс.»</strong> в строке этого платежа на вкладке «Группы».
+                </p>
+              </div>
+            </div>
+
+            <div className="modal-footer">
+              <button className="btn btn-gold" onClick={() => setShowStepHelp(false)}>
+                Понятно
+              </button>
+            </div>
           </div>
         </div>
       )}
