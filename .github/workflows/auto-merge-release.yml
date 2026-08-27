@@ -10,6 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      actions: write
 
     steps:
       - name: Checkout repository
@@ -37,6 +38,9 @@ jobs:
 
             echo "Creating GitHub Release..."
             gh release create "${{ github.ref_name }}" --title "${{ github.ref_name }}" --generate-notes
+
+            echo "Triggering deploy workflow on release branch..."
+            gh workflow run deploy.yml --ref release
           else
             echo "Tag commit is not on main branch. Skipping merge and release creation."
           fi

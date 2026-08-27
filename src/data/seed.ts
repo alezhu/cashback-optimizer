@@ -7,9 +7,9 @@ import type { Card, Group, Payment } from '../types';
 // Три карты с кэшбеком 10% и лимитом 1000 ₽ — как в исходном примере.
 export function seedCards(): Card[] {
   return [
-    { id: nextId(), name: 'Карта 1', rate: 10, limit: 1000 },
-    { id: nextId(), name: 'Карта 2', rate: 10, limit: 1000 },
-    { id: nextId(), name: 'Карта 3', rate: 10, limit: 1000 },
+    { id: nextId(), name: 'Карта 1', active: true, rate: 10, limit: 1000, roundTo: 0 },
+    { id: nextId(), name: 'Карта 2', active: true, rate: 10, limit: 1000, roundTo: 0 },
+    { id: nextId(), name: 'Карта 3', active: true, rate: 10, limit: 1000, roundTo: 0 },
   ];
 }
 
@@ -19,6 +19,8 @@ function makePayments(amounts: number[]): Payment[] {
   return amounts.map((a, i) => ({
     id: nextId(),
     name: `Платёж ${i + 1}`,
+    active: true,
+    noIncrease: false,
     amount: a,
     commissionOverride: '',
   }));
@@ -30,6 +32,7 @@ export function seedGroups(): Group[] {
     {
       id: nextId(),
       name: 'Группа 1',
+      active: true,
       commission: 0,
       roundCommission: false,
       minCommission: '',
@@ -39,6 +42,7 @@ export function seedGroups(): Group[] {
     {
       id: nextId(),
       name: 'Группа 2',
+      active: true,
       commission: 1,
       roundCommission: false,
       minCommission: '',
@@ -48,6 +52,7 @@ export function seedGroups(): Group[] {
     {
       id: nextId(),
       name: 'Группа 3',
+      active: true,
       commission: 1,
       roundCommission: false,
       minCommission: '',
@@ -57,6 +62,7 @@ export function seedGroups(): Group[] {
     {
       id: nextId(),
       name: 'Группа 4',
+      active: true,
       commission: 0,
       roundCommission: false,
       minCommission: '',
@@ -66,6 +72,7 @@ export function seedGroups(): Group[] {
     {
       id: nextId(),
       name: 'Группа 5',
+      active: true,
       commission: 0,
       roundCommission: false,
       minCommission: '',

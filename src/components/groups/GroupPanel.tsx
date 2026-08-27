@@ -1,6 +1,6 @@
-// Карточка одной группы: название, параметры комиссии группы (ставка,
-// округление до целого, мин/макс) и разворачиваемый список платежей внутри неё.
-import { ChevronDown, ChevronRight, Trash2, Plus } from 'lucide-react';
+// Карточка одной группы: активность, название, комиссия, мин/макс, дублирование, Drag-and-Drop
+// и список входящих платежей.
+import { ChevronDown, ChevronRight, Trash2, Plus, Copy, GripVertical } from 'lucide-react';
 import PaymentRow from './PaymentRow';
 import { fmt } from '../../utils/format';
 import type { Group, Payment, FormNumber } from '../../types';
@@ -8,12 +8,20 @@ import type { Group, Payment, FormNumber } from '../../types';
 interface GroupPanelProps {
   group: Group;
   open: boolean;
+  index: number;
   onToggle: (id: number) => void;
   updateGroup: (id: number, patch: Partial<Group>) => void;
   removeGroup: (id: number) => void;
+  duplicateGroup: (id: number) => void;
   addPayment: (groupId: number) => void;
   updatePayment: (groupId: number, paymentId: number, patch: Partial<Payment>) => void;
   removePayment: (groupId: number, paymentId: number) => void;
+  onDragStart: (e: React.DragEvent, index: number) => void;
+  onDragOver: (e: React.DragEvent, index: number) => void;
+  onDrop: (e: React.DragEvent, index: number) => void;
+  onDragEnd: (e: React.DragEvent) => void;
+  isDragging: boolean;
+  isDragOver: boolean;
 }
 
 function parseFormNumber(raw: string): FormNumber {
@@ -23,100 +31,149 @@ function parseFormNumber(raw: string): FormNumber {
 export default function GroupPanel({
   group,
   open,
+  index,
   onToggle,
   updateGroup,
   removeGroup,
+  duplicateGroup,
   addPayment,
   updatePayment,
   removePayment,
+  onDragStart,
+  onDragOver,
+  onDrop,
+  onDragEnd,
+  isDragging,
+  isDragOver,
 }: GroupPanelProps) {
-  // Сумма группы без учёта комиссии — просто для ориентира в свёрнутом виде.
-  const total = group.payments.reduce((s, p) => s + (p.amount === '' ? 0 : p.amount), 0);
+  const isActive = group.active !== false;
+  // Сумма группы по активным платежам
+  const total = group.payments
+    .filter((p) => p.active !== false)
+    .reduce((s, p) => s + (p.amount === '' ? 0 : p.amount), 0);
 
   return (
-    <div className="group-panel">
+    <div
+      className={`group-panel ${!isActive ? 'group-panel-inactive' : ''} ${isDragging ? 'dragging' : ''} ${
+        isDragOver ? 'drag-over' : ''
+      }`}
+      onDragOver={(e) => onDragOver(e, index)}
+      onDrop={(e) => onDrop(e, index)}
+    >
       <div className="group-header" onClick={() => onToggle(group.id)}>
-        {open ? (
-          <span className="chev">
-            <ChevronDown size={16} />
-          </span>
-        ) : (
-          <span className="chev">
-            <ChevronRight size={16} />
-          </span>
-        )}
+        <div className="group-header-main">
+          <div
+            className="drag-handle"
+            draggable
+            onClick={(e) => e.stopPropagation()}
+            onDragStart={(e) => onDragStart(e, index)}
+            onDragEnd={onDragEnd}
+            title="Перетащите для изменения порядка групп"
+          >
+            <GripVertical size={16} />
+          </div>
 
-        <input
-          className="name-input"
-          value={group.name}
-          onClick={(e) => e.stopPropagation()}
-          onChange={(e) => updateGroup(group.id, { name: e.target.value })}
-        />
-
-        {/* Базовая ставка комиссии группы — применяется ко всем её платежам,
-            если у конкретного платежа не задано своё переопределение. */}
-        <label className="mini-field" onClick={(e) => e.stopPropagation()}>
-          Комиссия %
-          <input
-            type="number"
-            className="input mono input-xs"
-            value={group.commission}
-            onChange={(e) => updateGroup(group.id, { commission: parseFormNumber(e.target.value) })}
-          />
-        </label>
-
-        {/* Если включено — рассчитанная сумма комиссии каждого платежа группы
-            округляется до целого рубля (Math.round). */}
-        <label className="checkbox-field" onClick={(e) => e.stopPropagation()}>
           <input
             type="checkbox"
-            checked={group.roundCommission}
-            onChange={(e) => updateGroup(group.id, { roundCommission: e.target.checked })}
+            checked={isActive}
+            title={isActive ? 'Группа активна (включена в расчёт)' : 'Группа отключена (не участвует в расчёте)'}
+            onClick={(e) => e.stopPropagation()}
+            onChange={(e) => updateGroup(group.id, { active: e.target.checked })}
           />
-          округлять до целого
-        </label>
 
-        {/* Нижняя граница суммы комиссии на один платёж, ₽ (пусто — не ограничено). */}
-        <label className="mini-field" onClick={(e) => e.stopPropagation()}>
-          Мин, ₽
+          {open ? (
+            <span className="chev">
+              <ChevronDown size={16} />
+            </span>
+          ) : (
+            <span className="chev">
+              <ChevronRight size={16} />
+            </span>
+          )}
+
           <input
-            type="number"
-            className="input mono input-sm"
-            value={group.minCommission}
-            onChange={(e) => updateGroup(group.id, { minCommission: parseFormNumber(e.target.value) })}
+            className="name-input"
+            value={group.name}
+            placeholder="Название группы"
+            onClick={(e) => e.stopPropagation()}
+            onChange={(e) => updateGroup(group.id, { name: e.target.value })}
           />
-        </label>
 
-        {/* Верхняя граница суммы комиссии на один платёж, ₽ (пусто — не ограничено). */}
-        <label className="mini-field" onClick={(e) => e.stopPropagation()}>
-          Макс, ₽
-          <input
-            type="number"
-            className="input mono input-sm"
-            value={group.maxCommission}
-            onChange={(e) => updateGroup(group.id, { maxCommission: parseFormNumber(e.target.value) })}
-          />
-        </label>
+          <span className="group-total">{fmt(total)} ₽</span>
 
-        <span className="group-total">{fmt(total)} ₽</span>
+          <button
+            className="btn-icon"
+            title="Дублировать группу"
+            onClick={(e) => {
+              e.stopPropagation();
+              duplicateGroup(group.id);
+            }}
+          >
+            <Copy size={15} />
+          </button>
 
-        <button
-          className="btn-icon"
-          onClick={(e) => {
-            e.stopPropagation();
-            removeGroup(group.id);
-          }}
-        >
-          <Trash2 size={15} />
-        </button>
+          <button
+            className="btn-icon"
+            title="Удалить группу"
+            onClick={(e) => {
+              e.stopPropagation();
+              removeGroup(group.id);
+            }}
+          >
+            <Trash2 size={15} />
+          </button>
+        </div>
+
+        {/* Вторая строка: параметры комиссии группы */}
+        <div className="group-header-sub" onClick={(e) => e.stopPropagation()}>
+          <label className="mini-field">
+            Комиссия %
+            <input
+              type="number"
+              className="input mono input-xs"
+              value={group.commission}
+              onChange={(e) => updateGroup(group.id, { commission: parseFormNumber(e.target.value) })}
+            />
+          </label>
+
+          <label className="checkbox-field">
+            <input
+              type="checkbox"
+              checked={group.roundCommission}
+              onChange={(e) => updateGroup(group.id, { roundCommission: e.target.checked })}
+            />
+            округлять до целого
+          </label>
+
+          <label className="mini-field">
+            Мин, ₽
+            <input
+              type="number"
+              className="input mono input-sm"
+              value={group.minCommission}
+              onChange={(e) => updateGroup(group.id, { minCommission: parseFormNumber(e.target.value) })}
+            />
+          </label>
+
+          <label className="mini-field">
+            Макс, ₽
+            <input
+              type="number"
+              className="input mono input-sm"
+              value={group.maxCommission}
+              onChange={(e) => updateGroup(group.id, { maxCommission: parseFormNumber(e.target.value) })}
+            />
+          </label>
+        </div>
       </div>
 
       {open && (
         <div className="group-body">
           <div className="payment-row-header">
+            <div title="Активность">Вкл</div>
             <div>Название платежа</div>
             <div>Сумма, ₽</div>
-            <div>Комиссия, % (своя)</div>
+            <div title="Запрет увеличения суммы платежа при округлении кэшбека">Фикс.</div>
             <div></div>
           </div>
 

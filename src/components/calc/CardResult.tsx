@@ -16,9 +16,12 @@ export default function CardResult({ result }: CardResultProps) {
   const total = transactions.reduce((s, t) => s + t.roundedSum, 0);
 
   return (
-    <div className="card-result">
+    <div className={`card-result ${!card.active ? 'card-result-inactive' : ''}`}>
       <div className="card-result-header">
-        <h3>{card.name}</h3>
+        <h3>
+          {card.name}
+          {!card.active && <span className="inactive-badge"> (отключена)</span>}
+        </h3>
         <div className="card-result-stats">
           <span>
             Сумма: <b>{fmt(total)} ₽</b>

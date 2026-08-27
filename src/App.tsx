@@ -1,13 +1,7 @@
 // Корневой компонент приложения: хранит всё состояние (карты, группы, платежи,
-// настройки и результат расчёта) и раздаёт его вкладкам. Вся мутирующая логика
-// (добавить/удалить/изменить карту, группу, платёж) живёт здесь и передаётся
-// вниз через пропсы — сами вкладки и их элементы состояния не хранят.
-//
-// Персистентность: при первом монтировании пытаемся загрузить сохранённое
-// состояние из IndexedDB; если там ничего нет — используем стартовые данные
-// (seed). После этого любое изменение cards/groups/tolerance сохраняется
-// обратно в IndexedDB — так данные переживают перезагрузку страницы.
-import { useEffect, useState } from 'react';
+// тему оформления, настройки и результат расчёта) и раздаёт его вкладкам.
+import { useEffect, useState, useRef } from 'react';
+import { Sun, Moon } from 'lucide-react';
 import Tabs, { type TabId } from './components/Tabs';
 import CardsTab from './components/cards/CardsTab';
 import GroupsTab from './components/groups/GroupsTab';
@@ -33,18 +27,32 @@ export default function App() {
   const [mode, setMode] = useState<CalcMode>('heuristic');
   // Результат последнего расчёта (null, пока расчёт ни разу не запускали).
   const [results, setResults] = useState<CardAllocationResult[] | null>(null);
-  // Идёт ли сейчас расчёт (актуально для полного перебора — он может занять
-  // заметное время, и хочется успеть показать индикатор перед тем, как
-  // синхронный перебор заблокирует поток).
+  // Идёт ли сейчас расчёт
   const [isCalculating, setIsCalculating] = useState(false);
-  // Доп. информация о последнем расчёте полным перебором: доказан ли найденный
-  // результат как максимум, и сколько узлов перебора это заняло.
+  // Доп. информация о последнем расчёте полным перебором
   const [exactInfo, setExactInfo] = useState<{ optimal: boolean; nodesExplored: number } | null>(null);
-  // Какие группы сейчас развёрнуты во вкладке «Группы» (по умолчанию — все).
+  // Какие группы сейчас развёрнуты во вкладке «Группы»
   const [openGroups, setOpenGroups] = useState<Set<number>>(() => new Set(groups.map((g) => g.id)));
-  // Пока не завершилась первая попытка чтения из IndexedDB, не пишем в неё —
-  // иначе стартовые (seed) данные могли бы затереть реально сохранённые.
+  // Пока не завершилась первая попытка чтения из IndexedDB, не пишем в неё
   const [loaded, setLoaded] = useState(false);
+
+  // Тема оформления (тёмная / светлая)
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+    const saved = localStorage.getItem('cashback-optimizer-theme');
+    if (saved === 'light' || saved === 'dark') return saved;
+    return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+  });
+
+  const workerRef = useRef<Worker | null>(null);
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('cashback-optimizer-theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme((t) => (t === 'dark' ? 'light' : 'dark'));
+  };
 
   // ---------- загрузка сохранённого состояния при старте ----------
   useEffect(() => {
@@ -62,8 +70,6 @@ export default function App() {
         setLoaded(true);
       })
       .catch(() => {
-        // IndexedDB недоступен (приватный режим, старый браузер и т.п.) —
-        // просто работаем со стартовыми данными без персистентности.
         setLoaded(true);
       });
     return () => {
@@ -75,18 +81,30 @@ export default function App() {
   useEffect(() => {
     if (!loaded) return;
     const state: PersistedState = { version: STATE_VERSION, cards, groups, tolerance };
-    saveState(state).catch(() => {
-      // Молча игнорируем ошибку сохранения — это не должно ломать интерфейс.
-    });
+    saveState(state).catch(() => {});
   }, [cards, groups, tolerance, loaded]);
 
   // ---------- карты ----------
   const updateCard = (id: number, patch: Partial<Card>) =>
     setCards((cs) => cs.map((c) => (c.id === id ? { ...c, ...patch } : c)));
-  const addCard = () => setCards((cs) => [...cs, { id: nextId(), name: `Карта ${cs.length + 1}`, rate: 10, limit: 1000 }]);
+  const addCard = () =>
+    setCards((cs) => [...cs, { id: nextId(), name: `Карта ${cs.length + 1}`, active: true, rate: 10, limit: 1000, roundTo: 0 }]);
   const removeCard = (id: number) => setCards((cs) => cs.filter((c) => c.id !== id));
-  // Перемещение карты вверх/вниз по списку — порядок важен для алгоритма
-  // распределения (последняя карта в списке — "остаточная").
+  const duplicateCard = (id: number) =>
+    setCards((cs) => {
+      const idx = cs.findIndex((c) => c.id === id);
+      if (idx === -1) return cs;
+      const target = cs[idx];
+      const copy: Card = {
+        ...target,
+        id: nextId(),
+        name: `${target.name} (копия)`,
+      };
+      const arr = [...cs];
+      arr.splice(idx + 1, 0, copy);
+      return arr;
+    });
+
   const moveCard = (idx: number, dir: 1 | -1) =>
     setCards((cs) => {
       const arr = [...cs];
@@ -96,11 +114,22 @@ export default function App() {
       return arr;
     });
 
+  const reorderCards = (startIndex: number, endIndex: number) => {
+    if (startIndex === endIndex) return;
+    setCards((cs) => {
+      const arr = [...cs];
+      const [removed] = arr.splice(startIndex, 1);
+      arr.splice(endIndex, 0, removed);
+      return arr;
+    });
+  };
+
   // ---------- группы ----------
   const addGroup = () => {
     const g: Group = {
       id: nextId(),
       name: `Группа ${groups.length + 1}`,
+      active: true,
       commission: 0,
       roundCommission: false,
       minCommission: '',
@@ -108,7 +137,7 @@ export default function App() {
       payments: [],
     };
     setGroups((gs) => [...gs, g]);
-    setOpenGroups((s) => new Set([...s, g.id])); // новая группа сразу развёрнута
+    setOpenGroups((s) => new Set([...s, g.id]));
   };
   const removeGroup = (id: number) => setGroups((gs) => gs.filter((g) => g.id !== id));
   const updateGroup = (id: number, patch: Partial<Group>) =>
@@ -120,9 +149,38 @@ export default function App() {
       return n;
     });
 
+  const duplicateGroup = (id: number) =>
+    setGroups((gs) => {
+      const idx = gs.findIndex((g) => g.id === id);
+      if (idx === -1) return gs;
+      const target = gs[idx];
+      const newGroupId = nextId();
+      const copy: Group = {
+        ...target,
+        id: newGroupId,
+        name: `${target.name} (копия)`,
+        payments: target.payments.map((p) => ({
+          ...p,
+          id: nextId(),
+        })),
+      };
+      const arr = [...gs];
+      arr.splice(idx + 1, 0, copy);
+      setOpenGroups((s) => new Set([...s, newGroupId]));
+      return arr;
+    });
+
+  const reorderGroups = (startIndex: number, endIndex: number) => {
+    if (startIndex === endIndex) return;
+    setGroups((gs) => {
+      const arr = [...gs];
+      const [removed] = arr.splice(startIndex, 1);
+      arr.splice(endIndex, 0, removed);
+      return arr;
+    });
+  };
+
   // ---------- платежи внутри групп ----------
-  // commissionOverride по умолчанию пустой — платёж наследует комиссию группы,
-  // пока пользователь явно не задаст свою ставку.
   const addPayment = (groupId: number) =>
     setGroups((gs) =>
       gs.map((g) =>
@@ -131,7 +189,7 @@ export default function App() {
               ...g,
               payments: [
                 ...g.payments,
-                { id: nextId(), name: `Платёж ${g.payments.length + 1}`, amount: 0, commissionOverride: '' },
+                { id: nextId(), name: `Платёж ${g.payments.length + 1}`, active: true, noIncrease: false, amount: 0, commissionOverride: '' },
               ],
             }
           : g
@@ -146,8 +204,6 @@ export default function App() {
 
   // ---------- запуск расчёта ----------
   const runCalc = () => {
-    // Формы хранят числовые поля как number | '' — здесь приводим всё к строгим
-    // числовым типам (normalize.ts) перед передачей в чистый сервис расчёта.
     const cleanCards = cards.map(cleanCard);
     const cleanGroups = groups.map(cleanGroup);
 
@@ -160,17 +216,42 @@ export default function App() {
       return;
     }
 
-    // Полный перебор может занять заметное время и синхронно заблокирует
-    // поток — сначала показываем индикатор "Считаю…", а сам перебор
-    // запускаем следующим тиком, чтобы React успел его отрисовать.
+    // Полный перебор через Web Worker (чтобы UI не блокировался)
     setIsCalculating(true);
     setTab('calc');
-    setTimeout(() => {
-      const { results: res, optimal, nodesExplored } = exactAllocate(cleanCards, cleanGroups);
-      setExactInfo({ optimal, nodesExplored });
-      setResults(res);
-      setIsCalculating(false);
-    }, 30);
+
+    try {
+      if (workerRef.current) {
+        workerRef.current.terminate();
+      }
+      const worker = new Worker(new URL('./workers/exactAllocation.worker.ts', import.meta.url), { type: 'module' });
+      workerRef.current = worker;
+
+      worker.onmessage = (e) => {
+        const { results: res, optimal, nodesExplored } = e.data;
+        setExactInfo({ optimal, nodesExplored });
+        setResults(res);
+        setIsCalculating(false);
+      };
+
+      worker.onerror = () => {
+        // Fallback на синхронный расчет
+        const { results: res, optimal, nodesExplored } = exactAllocate(cleanCards, cleanGroups);
+        setExactInfo({ optimal, nodesExplored });
+        setResults(res);
+        setIsCalculating(false);
+      };
+
+      worker.postMessage({ cards: cleanCards, groups: cleanGroups });
+    } catch {
+      // Fallback
+      setTimeout(() => {
+        const { results: res, optimal, nodesExplored } = exactAllocate(cleanCards, cleanGroups);
+        setExactInfo({ optimal, nodesExplored });
+        setResults(res);
+        setIsCalculating(false);
+      }, 30);
+    }
   };
 
   // ---------- экспорт / импорт ----------
@@ -182,7 +263,7 @@ export default function App() {
     setGroups(state.groups);
     setTolerance(state.tolerance);
     setOpenGroups(new Set(state.groups.map((g) => g.id)));
-    setResults(null); // старый расчёт больше не соответствует новым данным
+    setResults(null);
     setExactInfo(null);
   };
 
@@ -193,7 +274,13 @@ export default function App() {
           <h1>Раскладка платежей по картам</h1>
           <p>Максимизация кэшбека при оплате несколькими картами</p>
         </div>
-        <div className="badge">v{__APP_VERSION__}</div>
+        <div className="header-actions">
+          <button className="theme-toggle-btn" onClick={toggleTheme} title="Сменить тему оформления">
+            {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
+            {theme === 'dark' ? 'Светлая тема' : 'Тёмная тема'}
+          </button>
+          <div className="badge">v{__APP_VERSION__}</div>
+        </div>
       </div>
 
       <DataToolbar getState={getExportState} onImport={handleImport} />
@@ -201,7 +288,15 @@ export default function App() {
       <Tabs tab={tab} setTab={setTab} />
 
       {tab === 'cards' && (
-        <CardsTab cards={cards} updateCard={updateCard} addCard={addCard} removeCard={removeCard} moveCard={moveCard} />
+        <CardsTab
+          cards={cards}
+          updateCard={updateCard}
+          addCard={addCard}
+          removeCard={removeCard}
+          duplicateCard={duplicateCard}
+          moveCard={moveCard}
+          reorderCards={reorderCards}
+        />
       )}
 
       {tab === 'groups' && (
@@ -211,7 +306,9 @@ export default function App() {
           toggleGroup={toggleGroup}
           addGroup={addGroup}
           removeGroup={removeGroup}
+          duplicateGroup={duplicateGroup}
           updateGroup={updateGroup}
+          reorderGroups={reorderGroups}
           addPayment={addPayment}
           updatePayment={updatePayment}
           removePayment={removePayment}

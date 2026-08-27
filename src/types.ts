@@ -21,14 +21,26 @@ export type CalcMode = 'heuristic' | 'exact';
 export interface Payment {
   id: number;
   name: string;
+  /** Включен ли платёж в расчёт (по умолчанию true). */
+  active?: boolean;
+  /** Запрещено ли увеличивать сумму платежа при округлении кэшбека (по умолчанию false). */
+  noIncrease?: boolean;
   amount: FormNumber;
-  /** Своя ставка комиссии для этого платежа. '' = использовать комиссию группы. */
-  commissionOverride: FormNumber;
+  /** Своя ставка комиссии для этого платежа. null / '' = использовать комиссию группы. */
+  commissionOverride?: FormNumber | null;
+  /** Своё округление комиссии до целого рубля. null / undefined = как в группе. */
+  roundCommissionOverride?: boolean | null;
+  /** Своя нижняя граница комиссии, ₽. null / '' = как в группе. */
+  minCommissionOverride?: FormNumber | null;
+  /** Своя верхняя граница комиссии, ₽. null / '' = как в группе. */
+  maxCommissionOverride?: FormNumber | null;
 }
 
 export interface Group {
   id: number;
   name: string;
+  /** Включена ли группа в расчёт (по умолчанию true). */
+  active?: boolean;
   /** Базовая ставка комиссии группы, %. */
   commission: FormNumber;
   /** Округлять ли рассчитанную сумму комиссии платежа до целого рубля. */
@@ -43,10 +55,21 @@ export interface Group {
 export interface Card {
   id: number;
   name: string;
+  /** Активна ли карта для расчёта (по умолчанию true). */
+  active?: boolean;
   /** Ставка кэшбека, %. */
   rate: FormNumber;
-  /** Лимит кэшбека по карте, ₽. */
+  /**
+   * Лимит кэшбека по карте, ₽.
+   * 0 или '' = без лимита (не ограничен).
+   */
   limit: FormNumber;
+  /**
+   * Кратность кэшбека, ₽. 0 = не используется (округление до 10 ₽).
+   * Если задано, сумма транзакции округляется вверх до значения, при котором
+   * кэшбек кратен этому числу рублей (шаг = roundTo * 100 / rate ₽).
+   */
+  roundTo: FormNumber;
 }
 
 // ---------- «Чистые» данные для расчёта ----------
@@ -54,13 +77,19 @@ export interface Card {
 export interface CleanPayment {
   id: number;
   name: string;
+  active: boolean;
+  noIncrease: boolean;
   amount: number;
   commissionOverride: number | null;
+  roundCommissionOverride: boolean | null;
+  minCommissionOverride: number | null;
+  maxCommissionOverride: number | null;
 }
 
 export interface CleanGroup {
   id: number;
   name: string;
+  active: boolean;
   commission: number;
   roundCommission: boolean;
   minCommission: number | null;
@@ -71,8 +100,12 @@ export interface CleanGroup {
 export interface CleanCard {
   id: number;
   name: string;
+  active: boolean;
   rate: number;
+  /** Лимит кэшбека по карте, ₽. 0 = без лимита (не ограничен). */
   limit: number;
+  /** Кратность кэшбека, ₽. 0 = не используется. */
+  roundTo: number;
 }
 
 // ---------- Результат расчёта ----------
