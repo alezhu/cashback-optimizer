@@ -1,5 +1,5 @@
 // Одна транзакция внутри результата карты: список вошедших платежей,
-// эффективная ставка комиссии, округление, доплата, кнопка копирования суммы и предупреждения.
+// ставка комиссии, округление, доплата, копирование сумм и предупреждения.
 import { useState } from 'react';
 import { Copy, Check, AlertTriangle } from 'lucide-react';
 import { fmt } from '../../utils/format';
@@ -18,13 +18,13 @@ export default function TransactionBlock({ tx, index }: TransactionBlockProps) {
   // Предупреждение о нецелесообразной доплате
   const isHighIncrease = hasAdjust && cashback > 0 && increaseEntered >= cashback * 0.6;
 
-  const [copiedId, setCopiedId] = useState<number | null>(null);
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
-  const copyToClipboard = (id: number, amount: number) => {
+  const copyToClipboard = (key: string, amount: number) => {
     navigator.clipboard.writeText(amount.toFixed(2));
-    setCopiedId(id);
+    setCopiedKey(key);
     setTimeout(() => {
-      setCopiedId((current) => (current === id ? null : current));
+      setCopiedKey((current) => (current === key ? null : current));
     }, 2000);
   };
 
@@ -44,38 +44,39 @@ export default function TransactionBlock({ tx, index }: TransactionBlockProps) {
             const overridden = isRateOverridden(p);
             const isAdjust = pi === adjustIdx && hasAdjust;
             const newAmt = isAdjust ? p.amount + increaseEntered : p.amount;
-            const isCopied = copiedId === p.id;
+            const origKey = `${p.id}-orig`;
+            const adjKey = `${p.id}-adj`;
+            const isOrigCopied = copiedKey === origKey;
+            const isAdjCopied = copiedKey === adjKey;
 
             return (
               <tr key={p.id}>
                 <td className="pname">{p.name}</td>
                 <td className="pamount">
-                  {fmt(p.amount)} ₽
-                  {!isAdjust && (
-                    <button
-                      className={`btn-copy ${isCopied ? 'btn-copy-success' : ''}`}
-                      onClick={() => copyToClipboard(p.id, p.amount)}
-                      title="Скопировать сумму в буфер обмена"
-                    >
-                      {isCopied ? <Check size={11} /> : <Copy size={11} />}
-                      {isCopied ? 'Скопировано' : ''}
-                    </button>
-                  )}
+                  <span>{fmt(p.amount)} ₽</span>
+                  <button
+                    className={`btn-copy ${isOrigCopied ? 'btn-copy-success' : ''}`}
+                    onClick={() => copyToClipboard(origKey, p.amount)}
+                    title="Скопировать сумму в буфер обмена"
+                  >
+                    {isOrigCopied ? <Check size={11} /> : <Copy size={11} />}
+                    {isOrigCopied ? 'Скопировано' : ''}
+                  </button>
                 </td>
                 <td className="prate">
-                  {rate}%{overridden ? ' (своя)' : ''} · комиссия {fmt(commissionAmount(p, group))} ₽
+                  комиссия {rate}%{overridden ? ' (своя)' : ''} · {fmt(commissionAmount(p, group))} ₽
                 </td>
                 <td className="padjust">
                   {isAdjust && (
                     <span>
                       → ввести <b>{fmt(newAmt)} ₽</b> (+{fmt(increaseEntered)})
                       <button
-                        className={`btn-copy ${isCopied ? 'btn-copy-success' : ''}`}
-                        onClick={() => copyToClipboard(p.id, newAmt)}
+                        className={`btn-copy ${isAdjCopied ? 'btn-copy-success' : ''}`}
+                        onClick={() => copyToClipboard(adjKey, newAmt)}
                         title="Скопировать скорректированную сумму в буфер обмена"
                       >
-                        {isCopied ? <Check size={11} /> : <Copy size={11} />}
-                        {isCopied ? 'Скопировано' : 'Копировать'}
+                        {isAdjCopied ? <Check size={11} /> : <Copy size={11} />}
+                        {isAdjCopied ? 'Скопировано' : 'Копировать'}
                       </button>
                     </span>
                   )}
