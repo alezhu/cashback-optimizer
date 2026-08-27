@@ -1,5 +1,5 @@
-// Верхняя навигация по трём разделам приложения.
-import { CreditCard, Layers, Calculator, type LucideIcon } from 'lucide-react';
+// Верхняя навигация по разделам приложения и ссылка на инструкцию.
+import { CreditCard, Layers, Calculator, BookOpen, ExternalLink, type LucideIcon } from 'lucide-react';
 
 export type TabId = 'cards' | 'groups' | 'calc';
 
@@ -22,6 +22,16 @@ export default function Tabs({ tab, setTab }: TabsProps) {
           <Icon size={15} /> {label}
         </button>
       ))}
+
+      <a
+        href="./docs/index.html"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="tab tab-docs"
+        title="Открыть руководство пользователя в новой вкладке"
+      >
+        <BookOpen size={15} /> Инструкция <ExternalLink size={12} style={{ opacity: 0.6, marginLeft: 2 }} />
+      </a>
     </div>
   );
 }

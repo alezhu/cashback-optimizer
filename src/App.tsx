@@ -287,7 +287,7 @@ export default function App() {
         <div className="header">
           <div>
             <h1>Раскладка платежей по картам</h1>
-            <p>Максимизация кэшбека при оплате несколькими картами</p>
+            <p>Сервис для умно-жадных: максимизация кэшбека при оплате несколькими картами</p>
           </div>
           <div className="header-actions">
             <button className="theme-toggle-btn" onClick={toggleTheme} title="Сменить тему оформления">
@@ -306,7 +306,7 @@ export default function App() {
       <div className="header">
         <div>
           <h1>Раскладка платежей по картам</h1>
-          <p>Максимизация кэшбека при оплате несколькими картами</p>
+          <p>Сервис для умно-жадных: максимизация кэшбека при оплате несколькими картами</p>
         </div>
         <div className="header-actions">
           <button className="theme-toggle-btn" onClick={toggleTheme} title="Сменить тему оформления">
