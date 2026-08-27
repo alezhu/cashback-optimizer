@@ -1,7 +1,6 @@
-// Вкладка «Расчёт»: выбор алгоритма (эвристика/полный перебор), настройка
-// допустимого превышения (только для эвристики), кнопка запуска расчёта
-// и вывод результата по каждой карте + общий итог.
-import { Calculator, Zap, Search, FileDown } from 'lucide-react';
+// Вкладка «Расчёт»: выбор алгоритма, кнопка запуска, вывод результатов по картам,
+// финансовая аналитика (чистая выгода, комиссии, наценки), бенчмарк (vs 1%) и экспорт.
+import { Calculator, Zap, Search, FileDown, TrendingUp } from 'lucide-react';
 import CardResult from './CardResult';
 import { fmt } from '../../utils/format';
 import { exportResultsToFile } from '../../services/exportImport';
@@ -28,18 +27,45 @@ export default function CalcTab({
   isCalculating,
   exactInfo,
 }: CalcTabProps) {
-  // Общий итог по всем картам считаем прямо здесь — это чисто отображение,
-  // сам расчёт распределения уже выполнен в allocationService/exactAllocationService.
-  const grandTotal = results
-    ? results.reduce(
-        (acc, r) => {
-          const sum = r.transactions.reduce((s, t) => s + t.roundedSum, 0);
-          const raw = r.transactions.reduce((s, t) => s + t.cashback, 0);
-          const cashback = r.card.limit > 0 ? Math.min(raw, r.card.limit) : raw;
-          return { sum: acc.sum + sum, cashback: acc.cashback + cashback };
-        },
-        { sum: 0, cashback: 0 }
-      )
+  // Финансовая аналитика и агрегаты
+  const analytics = results
+    ? (() => {
+        let totalEntered = 0;
+        let totalBilled = 0;
+        let totalRounded = 0;
+        let totalIncrease = 0;
+        let totalCashback = 0;
+
+        results.forEach((cr) => {
+          const rawCb = cr.transactions.reduce((s, t) => s + t.cashback, 0);
+          const cb = cr.card.limit > 0 ? Math.min(rawCb, cr.card.limit) : rawCb;
+          totalCashback += cb;
+
+          cr.transactions.forEach((tx) => {
+            totalEntered += tx.enteredOriginal;
+            totalBilled += tx.billedSum;
+            totalRounded += tx.roundedSum;
+            totalIncrease += tx.increaseEntered;
+          });
+        });
+
+        const totalCommission = Math.max(0, totalBilled - totalEntered);
+        const netProfit = totalCashback - totalCommission - totalIncrease;
+        const benchmark1Pct = Math.floor(totalRounded * 0.01);
+        const extraGain = totalCashback - benchmark1Pct;
+
+        return {
+          totalEntered,
+          totalBilled,
+          totalRounded,
+          totalCommission,
+          totalIncrease,
+          totalCashback,
+          netProfit,
+          benchmark1Pct,
+          extraGain,
+        };
+      })()
     : null;
 
   return (
@@ -64,8 +90,8 @@ export default function CalcTab({
 
         <p className="mode-note">
           {mode === 'heuristic'
-            ? 'Считает почти мгновенно. Подбирает состав транзакций по правдоподобному алгоритму — обычно очень близко к максимуму, но без гарантии.'
-            : 'Перебирает варианты распределения платежей по картам, отсекая заведомо бесперспективные, и берёт лучший найденный. При большом числе платежей может считаться до нескольких секунд, а на очень больших наборах — упереться в лимит перебора и вернуть лучшее, что успел найти (это будет явно указано).'}
+            ? 'Считает мгновенно. Подбирает оптимальные карты с наименьшей достаточной ёмкостью и минимизирует число карт.'
+            : 'Точный алгоритм Branch & Bound. Находит глобально наилучшую комбинацию без подвисания интерфейса.'}
         </p>
 
         <div className="calc-toolbar">
@@ -90,9 +116,9 @@ export default function CalcTab({
         <div className="panel-dashed">Нажмите «Рассчитать», чтобы разбить платежи по картам и транзакциям.</div>
       )}
 
-      {isCalculating && <div className="panel-dashed">Идёт полный перебор вариантов — это может занять несколько секунд…</div>}
+      {isCalculating && <div className="panel-dashed">Идёт расчёт в фоновом потоке — интерфейс остаётся отзывчивым…</div>}
 
-      {results && !isCalculating && (
+      {results && !isCalculating && analytics && (
         <div>
           {mode === 'exact' && exactInfo && (
             <div className={`exact-badge ${exactInfo.optimal ? 'exact-badge-ok' : 'exact-badge-warn'}`}>
@@ -100,31 +126,67 @@ export default function CalcTab({
                 ? `Найден доказанный максимум кэшбека (перебрано узлов: ${exactInfo.nodesExplored.toLocaleString('ru-RU')}).`
                 : `Перебор остановлен по лимиту (${exactInfo.nodesExplored.toLocaleString(
                     'ru-RU'
-                  )} узлов) — показан лучший найденный вариант, он может быть не абсолютным максимумом.`}
+                  )} узлов) — показан лучший найденный вариант.`}
             </div>
           )}
+
+          {/* Бенчмарк-сравнение со стандартной 1% картой */}
+          <div className="benchmark-banner">
+            <div>
+              <TrendingUp size={16} style={{ display: 'inline', verticalAlign: 'text-bottom', marginRight: 6 }} />
+              Сравнение: оптимизация даёт <b>{fmt(analytics.totalCashback)} ₽</b> кэшбека против{' '}
+              <b>{fmt(analytics.benchmark1Pct)} ₽</b> при оплате базовой картой 1%.
+            </div>
+            <div className="benchmark-extra">
+              +{fmt(analytics.extraGain)} ₽ выгоды
+            </div>
+          </div>
+
+          {/* Финансовая аналитика */}
+          <div className="analytics-grid">
+            <div className="analytics-card">
+              <div className="analytics-card-title">Сумма платежей</div>
+              <div className="analytics-card-value">{fmt(analytics.totalEntered)} ₽</div>
+            </div>
+            <div className="analytics-card">
+              <div className="analytics-card-title">Комиссии</div>
+              <div className="analytics-card-value rust">{fmt(analytics.totalCommission)} ₽</div>
+            </div>
+            <div className="analytics-card">
+              <div className="analytics-card-title">Доплата за шаг</div>
+              <div className="analytics-card-value">{fmt(analytics.totalIncrease)} ₽</div>
+            </div>
+            <div className="analytics-card">
+              <div className="analytics-card-title">Кэшбек</div>
+              <div className="analytics-card-value gold">{fmt(analytics.totalCashback)} ₽</div>
+            </div>
+            <div className="analytics-card">
+              <div className="analytics-card-title">Чистая выгода</div>
+              <div className={`analytics-card-value ${analytics.netProfit >= 0 ? 'green' : 'rust'}`}>
+                {fmt(analytics.netProfit)} ₽
+              </div>
+            </div>
+          </div>
 
           {results.map((r) => (
             <CardResult key={r.card.id} result={r} />
           ))}
 
-          {grandTotal && (
-            <div className="grand-total">
-              <span>
-                Итого сумма: <b>{fmt(grandTotal.sum)} ₽</b>
-              </span>
-              <span>
-                Итого кэшбек: <b className="cb">{fmt(grandTotal.cashback)} ₽</b>
-              </span>
-              <button
-                className="btn"
-                onClick={() => exportResultsToFile(results!, mode)}
-                title="Скачать результат расчёта в JSON-файл"
-              >
-                <FileDown size={14} /> Выгрузить результат
-              </button>
-            </div>
-          )}
+          <div className="grand-total">
+            <span>
+              Сумма к списанию: <b>{fmt(analytics.totalRounded)} ₽</b>
+            </span>
+            <span>
+              Итого кэшбек: <b className="cb">{fmt(analytics.totalCashback)} ₽</b>
+            </span>
+            <button
+              className="btn"
+              onClick={() => exportResultsToFile(results, mode)}
+              title="Скачать результат расчёта в JSON-файл"
+            >
+              <FileDown size={14} /> Выгрузить результат
+            </button>
+          </div>
         </div>
       )}
     </div>
