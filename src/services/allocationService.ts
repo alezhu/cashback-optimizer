@@ -2,9 +2,35 @@ import { round2, billedOf, marginalFactor, chunkBilled, pickClosestChunks, pickC
 import type { CleanCard, CleanGroup, Chunk, TransactionResult, CardAllocationResult } from '../types';
 
 /**
+ * Вычисляет, до какой суммы нужно округлить сумму к списанию, чтобы кэшбек
+ * был кратен card.roundTo рублей.
+ *
+ * Если card.roundTo === 0 (не задан) или ставка не задана — округление не применяется:
+ * банк считает кэшбек с фактической суммы к списанию (с точностью до копейки).
+ *
+ * Если card.roundTo > 0:
+ *   шаг = roundTo * 100 / rate (₽ суммы на одну единицу roundTo кэшбека)
+ *   roundedFloat = ceil(billedSum / step) * step
+ *   roundedSum   = ceil(roundedFloat) — к целому рублю вверх
+ *
+ * Для дробного шага (напр., rate = 3 %, roundTo = 1 → шаг ≈ 33.33 ₽) второй
+ * ceil гарантирует целочисленный результат и floor(sum * rate/100) % roundTo === 0.
+ */
+function computeRoundedSum(billedSum: number, card: CleanCard): number {
+  const { rate, roundTo } = card;
+  if (roundTo <= 0 || rate <= 0) {
+    // Без округления: банк считает кэшбек с фактической суммы к списанию.
+    return round2(billedSum);
+  }
+  const step = (roundTo * 100) / rate;
+  const roundedFloat = Math.ceil(round2(billedSum) / step - 1e-9) * step;
+  return Math.ceil(round2(roundedFloat) - 1e-9);
+}
+
+/**
  * Формирует одну транзакцию (платёж/подмножество платежей одной группы на одной карте):
  * - сумма к списанию с учётом комиссии каждого платежа;
- * - округление вверх до кратной 10 ₽ (чтобы кэшбек считался без потерь на округлении);
+ * - округление вверх до суммы, при которой кэшбек кратен card.roundTo (или до 10 ₽, если roundTo = 0);
  * - на сколько нужно увеличить самый крупный платёж в транзакции, чтобы фактически
  *   получить эту округлённую сумму после начисления комиссии;
  * - кэшбек по карте для округлённой суммы.
@@ -21,10 +47,9 @@ export function makeTransaction(chunk: Chunk, card: CleanCard): TransactionResul
   const enteredOriginal = round2(payments.reduce((s, p) => s + p.amount, 0));
   const billedSum = round2(payments.reduce((s, p) => s + billedOf(p, group), 0));
 
-  // Округляем сумму к списанию вверх до ближайшей кратной 10 ₽ — только "вверх",
-  // так как платежи можно только увеличивать, а кэшбек на кратной 10 сумме
-  // считается без потерь на округлении вниз.
-  const roundedSum = Math.ceil(round2(billedSum) / 10 - 1e-9) * 10;
+  // Округляем сумму к списанию вверх — только «вверх», так как платежи можно
+  // только увеличивать. Конкретный шаг зависит от card.roundTo.
+  const roundedSum = computeRoundedSum(billedSum, card);
   const increaseBilled = round2(roundedSum - billedSum);
 
   // Увеличивать будем самый крупный платёж транзакции — так относительное
@@ -178,42 +203,79 @@ function fillCard(pool: Chunk[], card: CleanCard, target: number, cap: number): 
 
 /**
  * Распределяет группы/платежи по картам.
- * Все карты, кроме последней, заполняются как можно ближе к целевой сумме
- * (лимит/ставка) — см. fillCard. Последняя карта получает весь остаток.
+ * Приоритет распределения:
+ * 1. Карты с максимальной процентной ставкой кэшбека.
+ * 2. Минимизация числа задействованных карт внутри одного тарифа/уровня (Bin Packing).
+ * 3. Переход к картам с меньшей ставкой / остаточным картам только при исчерпании лимитов.
  */
 export function allocate(cards: CleanCard[], groups: CleanGroup[], tolerance: number): CardAllocationResult[] {
-  // "Пул" — все ещё не распределённые группы. Каждый элемент пула — это группа
-  // целиком (или то, что от неё осталось после частичного разбиения на предыдущих
-  // картах). Две разные группы никогда не смешиваются в одном элементе пула —
-  // это гарантирует, что они не окажутся в одной транзакции.
   const pool: Chunk[] = groups
     .filter((g) => g.payments.length > 0)
     .map((g) => ({ group: g, payments: [...g.payments] }));
 
   const cardResults: CardAllocationResult[] = cards.map((c) => ({ card: c, transactions: [] }));
-  if (cards.length === 0) return cardResults;
+  if (cards.length === 0 || pool.length === 0) return cardResults;
 
-  // Все карты, кроме последней, участвуют в целевом заполнении.
-  // Последняя карта в списке — не целевая, она просто забирает весь остаток.
-  const fillCards = cards.slice(0, -1);
-  const lastCard = cards[cards.length - 1];
-
-  fillCards.forEach((card, cardIdx) => {
-    // Целевая сумма — сумма, при достижении которой кэшбек по карте упрётся
-    // в лимит (limit / rate * 100). Если ставка 0% — цели нет, карта пропускает
-    // целевое заполнение (ничего не берёт на этом шаге).
-    if (card.rate <= 0) return;
-    const target = (card.limit * 100) / card.rate;
-    const cap = target + tolerance; // допустимое небольшое превышение цели
-    cardResults[cardIdx].transactions = fillCard(pool, card, target, cap);
+  // Группируем активные карты (со ставкой > 0 и лимитом > 0) по убыванию ставки кэшбека
+  const rateTiersMap = new Map<number, { card: CleanCard; originalIdx: number }[]>();
+  cards.forEach((c, originalIdx) => {
+    if (c.rate > 0 && c.limit > 0) {
+      if (!rateTiersMap.has(c.rate)) rateTiersMap.set(c.rate, []);
+      rateTiersMap.get(c.rate)!.push({ card: c, originalIdx });
+    }
   });
 
-  // Всё, что не поместилось ни на одну целевую карту, целиком уходит на
-  // последнюю карту — по одной транзакции на оставшийся кусок группы.
-  const lastRes = cardResults[cardResults.length - 1];
-  pool.forEach((chunk) => {
-    lastRes.transactions.push(makeTransaction(chunk, lastCard));
-  });
+  const sortedRates = Array.from(rateTiersMap.keys()).sort((a, b) => b - a);
+
+  for (const rate of sortedRates) {
+    if (pool.length === 0) break;
+    const tier = rateTiersMap.get(rate)!;
+    const poolBilledSum = pool.reduce((s, ch) => s + chunkBilled(ch), 0);
+
+    // Стратегия 1: Проверяем, помещается ли весь оставшийся пул платежей на ОДНУ карту из этого тарифа.
+    // Если да — выбираем наилучшую одиночную карту (с наименьшей достаточной ёмкостью, при равенстве — первую по порядку).
+    const singleFitCards = tier
+      .map((entry) => ({
+        ...entry,
+        cap: (entry.card.limit * 100) / entry.card.rate + tolerance,
+        target: (entry.card.limit * 100) / entry.card.rate,
+      }))
+      .filter((entry) => entry.cap >= poolBilledSum - 1e-6);
+
+    if (singleFitCards.length > 0) {
+      singleFitCards.sort((a, b) => a.cap - b.cap || a.originalIdx - b.originalIdx);
+      const chosen = singleFitCards[0];
+      cardResults[chosen.originalIdx].transactions = fillCard(pool, chosen.card, chosen.target, chosen.cap);
+      continue;
+    }
+
+    // Стратегия 2: Если на одну карту всё не помещается, сортируем карты тарифа по убыванию ёмкости,
+    // чтобы заполнять крупные карты первыми и минимизировать общее число задействованных карт.
+    const sortedTier = [...tier].sort((a, b) => {
+      const capA = (a.card.limit * 100) / a.card.rate;
+      const capB = (b.card.limit * 100) / b.card.rate;
+      return capB - capA || a.originalIdx - b.originalIdx;
+    });
+
+    for (const entry of sortedTier) {
+      if (pool.length === 0) break;
+      const target = (entry.card.limit * 100) / entry.card.rate;
+      const cap = target + tolerance;
+      cardResults[entry.originalIdx].transactions = fillCard(pool, entry.card, target, cap);
+    }
+  }
+
+  // Если после всех активных карт остались нераспределённые платежи — отправляем их на остаточную карту
+  if (pool.length > 0) {
+    const residualIdx = cards.findIndex(
+      (c, idx) => cardResults[idx].transactions.length === 0 && (c.limit <= 0 || c.rate <= 0)
+    );
+    const targetIdx = residualIdx !== -1 ? residualIdx : cards.length - 1;
+    const targetCard = cards[targetIdx];
+    pool.forEach((chunk) => {
+      cardResults[targetIdx].transactions.push(makeTransaction(chunk, targetCard));
+    });
+  }
 
   return cardResults;
 }
