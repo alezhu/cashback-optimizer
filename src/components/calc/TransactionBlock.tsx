@@ -53,15 +53,16 @@ export default function TransactionBlock({ tx, index }: TransactionBlockProps) {
               <tr key={p.id}>
                 <td className="pname">{p.name}</td>
                 <td className="pamount">
-                  <span>{fmt(p.amount)} ₽</span>
-                  <button
-                    className={`btn-copy ${isOrigCopied ? 'btn-copy-success' : ''}`}
-                    onClick={() => copyToClipboard(origKey, p.amount)}
-                    title="Скопировать сумму в буфер обмена"
-                  >
-                    {isOrigCopied ? <Check size={11} /> : <Copy size={11} />}
-                    {isOrigCopied ? 'Скопировано' : ''}
-                  </button>
+                  <div className="pamount-cell">
+                    <span className="pamount-val">{fmt(p.amount)} ₽</span>
+                    <button
+                      className={`btn-copy btn-copy-icon ${isOrigCopied ? 'btn-copy-success' : ''}`}
+                      onClick={() => copyToClipboard(origKey, p.amount)}
+                      title={isOrigCopied ? 'Скопировано!' : 'Скопировать сумму в буфер обмена'}
+                    >
+                      {isOrigCopied ? <Check size={11} /> : <Copy size={11} />}
+                    </button>
+                  </div>
                 </td>
                 <td className="prate">
                   комиссия {rate}%{overridden ? ' (своя)' : ''} · {fmt(commissionAmount(p, group))} ₽
