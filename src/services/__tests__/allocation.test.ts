@@ -168,23 +168,26 @@ describe('Allocation Algorithms on test scenario', () => {
   });
 
   it('Card with limit: 0 (or limit: "") is treated as unlimited cashback (no cap)', () => {
-    const cards = [
+    const rawCards: Card[] = [
       { id: 1, name: 'Безлимитная карта 5%', active: true, rate: 5, limit: 0, roundTo: 1 },
     ];
-    const groups = [
+    const rawGroups: Group[] = [
       {
         id: 1,
         name: 'Группа 1',
         active: true,
         commission: 0,
         roundCommission: false,
-        minCommission: null,
-        maxCommission: null,
+        minCommission: '',
+        maxCommission: '',
         payments: [
-          { id: 1, name: 'П1', active: true, noIncrease: false, amount: 50000, commissionOverride: null },
+          { id: 1, name: 'П1', active: true, noIncrease: false, amount: 50000, commissionOverride: '' },
         ],
       },
     ];
+
+    const cards = rawCards.map(cleanCard);
+    const groups = rawGroups.map(cleanGroup);
 
     const heurResults = allocate(cards, groups, 100);
     const heurSummary = summarize(heurResults);
@@ -198,21 +201,21 @@ describe('Allocation Algorithms on test scenario', () => {
   });
 
   it('Inactive groups and inactive payments are completely excluded from allocation', () => {
-    const cards = [
+    const rawCards: Card[] = [
       { id: 1, name: 'Карта 1', active: true, rate: 10, limit: 1000, roundTo: 0 },
     ];
-    const groups = [
+    const rawGroups: Group[] = [
       {
         id: 1,
         name: 'Активная группа',
         active: true,
         commission: 0,
         roundCommission: false,
-        minCommission: null,
-        maxCommission: null,
+        minCommission: '',
+        maxCommission: '',
         payments: [
-          { id: 1, name: 'Активный платёж', active: true, noIncrease: false, amount: 2000, commissionOverride: null },
-          { id: 2, name: 'Неактивный платёж', active: false, noIncrease: false, amount: 5000, commissionOverride: null },
+          { id: 1, name: 'Активный платёж', active: true, noIncrease: false, amount: 2000, commissionOverride: '' },
+          { id: 2, name: 'Неактивный платёж', active: false, noIncrease: false, amount: 5000, commissionOverride: '' },
         ],
       },
       {
@@ -221,13 +224,16 @@ describe('Allocation Algorithms on test scenario', () => {
         active: false,
         commission: 0,
         roundCommission: false,
-        minCommission: null,
-        maxCommission: null,
+        minCommission: '',
+        maxCommission: '',
         payments: [
-          { id: 3, name: 'Платёж в выкл группе', active: true, noIncrease: false, amount: 10000, commissionOverride: null },
+          { id: 3, name: 'Платёж в выкл группе', active: true, noIncrease: false, amount: 10000, commissionOverride: '' },
         ],
       },
     ];
+
+    const cards = rawCards.map(cleanCard);
+    const groups = rawGroups.map(cleanGroup);
 
     const heurResults = allocate(cards, groups, 100);
     expect(heurResults[0].transactions.length).toBe(1);
@@ -242,25 +248,28 @@ describe('Allocation Algorithms on test scenario', () => {
   });
 
   it('Higher rate cards are prioritized before lower rate cards', () => {
-    const cards = [
+    const rawCards: Card[] = [
       { id: 1, name: 'Карта 5%', active: true, rate: 5, limit: 1000, roundTo: 1 },
       { id: 2, name: 'Карта 10%', active: true, rate: 10, limit: 500, roundTo: 1 },
     ];
-    const groups = [
+    const rawGroups: Group[] = [
       {
         id: 1,
         name: 'Группа 1',
         active: true,
         commission: 0,
         roundCommission: false,
-        minCommission: null,
-        maxCommission: null,
+        minCommission: '',
+        maxCommission: '',
         payments: [
-          { id: 1, name: 'П1', active: true, noIncrease: false, amount: 5000, commissionOverride: null },
-          { id: 2, name: 'П2', active: true, noIncrease: false, amount: 5000, commissionOverride: null },
+          { id: 1, name: 'П1', active: true, noIncrease: false, amount: 5000, commissionOverride: '' },
+          { id: 2, name: 'П2', active: true, noIncrease: false, amount: 5000, commissionOverride: '' },
         ],
       },
     ];
+
+    const cards = rawCards.map(cleanCard);
+    const groups = rawGroups.map(cleanGroup);
 
     const heurResults = allocate(cards, groups, 100);
     expect(heurResults[1].card.name).toBe('Карта 10%');
@@ -274,25 +283,28 @@ describe('Allocation Algorithms on test scenario', () => {
   });
 
   it('Spillover when active card limit is exceeded into second card', () => {
-    const cards = [
+    const rawCards: Card[] = [
       { id: 1, name: 'Карта 1', active: true, rate: 10, limit: 500, roundTo: 1 },
       { id: 2, name: 'Карта 2', active: true, rate: 10, limit: 500, roundTo: 1 },
     ];
-    const groups = [
+    const rawGroups: Group[] = [
       {
         id: 1,
         name: 'Группа 1',
         active: true,
         commission: 0,
         roundCommission: false,
-        minCommission: null,
-        maxCommission: null,
+        minCommission: '',
+        maxCommission: '',
         payments: [
-          { id: 1, name: 'П1', active: true, noIncrease: false, amount: 4000, commissionOverride: null },
-          { id: 2, name: 'П2', active: true, noIncrease: false, amount: 4000, commissionOverride: null },
+          { id: 1, name: 'П1', active: true, noIncrease: false, amount: 4000, commissionOverride: '' },
+          { id: 2, name: 'П2', active: true, noIncrease: false, amount: 4000, commissionOverride: '' },
         ],
       },
     ];
+
+    const cards = rawCards.map(cleanCard);
+    const groups = rawGroups.map(cleanGroup);
 
     const heurResults = allocate(cards, groups, 100);
     const heurSummary = summarize(heurResults);
@@ -306,63 +318,106 @@ describe('Allocation Algorithms on test scenario', () => {
   });
 
   it('When largest payment has noIncrease: true, increase is applied to next largest eligible payment', () => {
-    const cards = [
-      { id: 1, name: 'Карта 10%', active: true, rate: 10, limit: 1000, roundTo: 10 }, // step = 100 ₽
+    const rawCards: Card[] = [
+      { id: 1, name: 'Карта 10%', active: true, rate: 10, limit: 1000, roundTo: 10 },
     ];
-    const groups = [
+    const rawGroups: Group[] = [
       {
         id: 1,
         name: 'Группа 1',
         active: true,
         commission: 0,
         roundCommission: false,
-        minCommission: null,
-        maxCommission: null,
+        minCommission: '',
+        maxCommission: '',
         payments: [
-          { id: 1, name: 'П1 (заблокирован)', active: true, noIncrease: true, amount: 450, commissionOverride: null },
-          { id: 2, name: 'П2 (разрешен)', active: true, noIncrease: false, amount: 300, commissionOverride: null },
+          { id: 1, name: 'П1 (заблокирован)', active: true, noIncrease: true, amount: 450, commissionOverride: '' },
+          { id: 2, name: 'П2 (разрешен)', active: true, noIncrease: false, amount: 300, commissionOverride: '' },
         ],
       },
     ];
 
+    const cards = rawCards.map(cleanCard);
+    const groups = rawGroups.map(cleanGroup);
+
     const heurResults = allocate(cards, groups, 100);
     expect(heurResults[0].transactions.length).toBe(1);
     const tx = heurResults[0].transactions[0];
-    // Общая сумма 750 ₽ округляется до 800 ₽ (+50 ₽)
     expect(tx.roundedSum).toBe(800);
     expect(tx.increaseEntered).toBe(50);
-    // Доплата должна быть назначена на П2 (индекс 1), а не на заблокированный П1 (индекс 0)
     expect(tx.adjustIdx).toBe(1);
     expect(tx.payments[tx.adjustIdx].name).toBe('П2 (разрешен)');
   });
 
   it('When all payments in transaction have noIncrease: true, no increase is applied', () => {
-    const cards = [
-      { id: 1, name: 'Карта 10%', active: true, rate: 10, limit: 1000, roundTo: 10 }, // step = 100 ₽
+    const rawCards: Card[] = [
+      { id: 1, name: 'Карта 10%', active: true, rate: 10, limit: 1000, roundTo: 10 },
     ];
-    const groups = [
+    const rawGroups: Group[] = [
       {
         id: 1,
         name: 'Группа 1',
         active: true,
         commission: 0,
         roundCommission: false,
-        minCommission: null,
-        maxCommission: null,
+        minCommission: '',
+        maxCommission: '',
         payments: [
-          { id: 1, name: 'П1 (заблокирован)', active: true, noIncrease: true, amount: 450, commissionOverride: null },
-          { id: 2, name: 'П2 (заблокирован)', active: true, noIncrease: true, amount: 300, commissionOverride: null },
+          { id: 1, name: 'П1 (заблокирован)', active: true, noIncrease: true, amount: 450, commissionOverride: '' },
+          { id: 2, name: 'П2 (заблокирован)', active: true, noIncrease: true, amount: 300, commissionOverride: '' },
         ],
       },
     ];
 
+    const cards = rawCards.map(cleanCard);
+    const groups = rawGroups.map(cleanGroup);
+
     const heurResults = allocate(cards, groups, 100);
     expect(heurResults[0].transactions.length).toBe(1);
     const tx = heurResults[0].transactions[0];
-    // Доплата не применяется
     expect(tx.increaseEntered).toBe(0);
     expect(tx.roundedSum).toBe(750);
     expect(tx.cashback).toBe(75);
+  });
+
+  it('Payment with full commission override uses its own rate, rounding, min and max commission', () => {
+    const rawCards: Card[] = [
+      { id: 1, name: 'Карта 10%', active: true, rate: 10, limit: 1000, roundTo: 0 },
+    ];
+    const rawGroups: Group[] = [
+      {
+        id: 1,
+        name: 'Группа 0%',
+        active: true,
+        commission: 0,
+        roundCommission: false,
+        minCommission: '',
+        maxCommission: '',
+        payments: [
+          {
+            id: 1,
+            name: 'Платёж со своей комиссией',
+            active: true,
+            noIncrease: false,
+            amount: 1000,
+            commissionOverride: 2,
+            roundCommissionOverride: true,
+            minCommissionOverride: 30,
+            maxCommissionOverride: 100,
+          },
+        ],
+      },
+    ];
+
+    const cards = rawCards.map(cleanCard);
+    const groups = rawGroups.map(cleanGroup);
+
+    const results = allocate(cards, groups, 100);
+    expect(results[0].transactions.length).toBe(1);
+    const tx = results[0].transactions[0];
+    // amount = 1000, commission = 30 (min) -> billed = 1030
+    expect(tx.billedSum).toBe(1030);
+    expect(tx.cashback).toBe(103);
   });
 
   it('Works with empty cards and empty groups', () => {
