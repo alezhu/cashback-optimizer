@@ -20,6 +20,7 @@ export default function CardsTab({ cards, updateCard, addCard, removeCard, moveC
         <div className="field-label">Название карты</div>
         <div className="field-label">Кэшбек, %</div>
         <div className="field-label">Лимит кэшбека, ₽</div>
+        <div className="field-label">Округл. до, ₽</div>
         <div></div>
       </div>
 

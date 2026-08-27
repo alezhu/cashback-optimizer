@@ -16,7 +16,14 @@ function toNumberOrNull(v: FormNumber): number | null {
 }
 
 export function cleanCard(card: Card): CleanCard {
-  return { id: card.id, name: card.name, rate: toNumber(card.rate), limit: toNumber(card.limit) };
+  return {
+    id: card.id,
+    name: card.name,
+    rate: toNumber(card.rate),
+    limit: toNumber(card.limit),
+    // Старые сохранённые данные без поля roundTo дадут 0 (поведение не меняется).
+    roundTo: toNumber(card.roundTo),
+  };
 }
 
 export function cleanPayment(p: Payment): CleanPayment {

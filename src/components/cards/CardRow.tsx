@@ -1,5 +1,5 @@
 // Одна строка карты в списке: название, ставка кэшбека, лимит кэшбека,
-// кнопки перемещения по списку и удаления.
+// округление кэшбека, кнопки перемещения по списку и удаления.
 import { ArrowUp, ArrowDown, Trash2 } from 'lucide-react';
 import type { Card, FormNumber } from '../../types';
 
@@ -41,6 +41,14 @@ export default function CardRow({ card, index, onUpdate, onRemove, onMove }: Car
         className="input mono"
         value={card.limit}
         onChange={(e) => onUpdate(card.id, { limit: parseFormNumber(e.target.value) })}
+      />
+      <input
+        type="number"
+        min={0}
+        className="input mono"
+        value={card.roundTo}
+        placeholder="0"
+        onChange={(e) => onUpdate(card.id, { roundTo: parseFormNumber(e.target.value) })}
       />
       <button className="btn-icon" onClick={() => onRemove(card.id)}>
         <Trash2 size={15} />

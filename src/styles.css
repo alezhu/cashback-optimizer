@@ -134,7 +134,7 @@ body {
 /* Cards tab */
 .card-row {
   display: grid;
-  grid-template-columns: 40px 2fr 1fr 1fr 32px;
+  grid-template-columns: 40px 2fr 1fr 1fr 80px 32px;
   gap: 12px;
   align-items: center;
   background: var(--panel-2);
@@ -144,7 +144,7 @@ body {
 }
 .card-row-header {
   display: grid;
-  grid-template-columns: 40px 2fr 1fr 1fr 32px;
+  grid-template-columns: 40px 2fr 1fr 1fr 80px 32px;
   gap: 12px;
   padding: 0 10px;
   margin-bottom: 6px;
