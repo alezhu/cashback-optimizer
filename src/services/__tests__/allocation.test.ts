@@ -19,66 +19,71 @@ function createScenarioData(): { cards: Card[]; groups: Group[]; tolerance: numb
       {
         id: 7,
         name: 'Группа 1',
+        active: true,
         commission: 0,
         roundCommission: false,
         minCommission: '',
         maxCommission: '',
         payments: [
-          { id: 8, name: 'Платёж 1.1', amount: 1994.31, commissionOverride: '' },
-          { id: 9, name: 'Платёж 1.2', amount: 605.56, commissionOverride: '' },
-          { id: 10, name: 'Платёж 1.3', amount: 250, commissionOverride: '' },
-          { id: 11, name: 'Платёж 1.4', amount: 176.9, commissionOverride: '' },
-          { id: 12, name: 'Платёж 1.5', amount: 105, commissionOverride: '' },
-          { id: 13, name: 'Платёж 1.6', amount: 518.13, commissionOverride: '' },
-          { id: 14, name: 'Платёж 1.7', amount: 847.01, commissionOverride: '' },
-          { id: 15, name: 'Платёж 1.8', amount: 303.49, commissionOverride: '' },
-          { id: 16, name: 'Платёж 1.9', amount: 488.22, commissionOverride: '' },
-          { id: 30, name: 'Платёж 1.10', amount: 6, commissionOverride: '' },
+          { id: 8, name: 'Платёж 1.1', active: true, amount: 1994.31, commissionOverride: '' },
+          { id: 9, name: 'Платёж 1.2', active: true, amount: 605.56, commissionOverride: '' },
+          { id: 10, name: 'Платёж 1.3', active: true, amount: 250, commissionOverride: '' },
+          { id: 11, name: 'Платёж 1.4', active: true, amount: 176.9, commissionOverride: '' },
+          { id: 12, name: 'Платёж 1.5', active: true, amount: 105, commissionOverride: '' },
+          { id: 13, name: 'Платёж 1.6', active: true, amount: 518.13, commissionOverride: '' },
+          { id: 14, name: 'Платёж 1.7', active: true, amount: 847.01, commissionOverride: '' },
+          { id: 15, name: 'Платёж 1.8', active: true, amount: 303.49, commissionOverride: '' },
+          { id: 16, name: 'Платёж 1.9', active: true, amount: 488.22, commissionOverride: '' },
+          { id: 30, name: 'Платёж 1.10', active: true, amount: 6, commissionOverride: '' },
         ],
       },
       {
         id: 17,
         name: 'Группа 2',
+        active: true,
         commission: 1,
         roundCommission: true,
         minCommission: '',
         maxCommission: '',
         payments: [
-          { id: 18, name: 'Платёж 2.1', amount: 0, commissionOverride: '' },
-          { id: 19, name: 'Платёж 2.2', amount: 3721.18, commissionOverride: '' },
+          { id: 18, name: 'Платёж 2.1', active: true, amount: 0, commissionOverride: '' },
+          { id: 19, name: 'Платёж 2.2', active: true, amount: 3721.18, commissionOverride: '' },
         ],
       },
       {
         id: 20,
         name: 'Группа 3',
+        active: true,
         commission: 1,
         roundCommission: false,
         minCommission: '',
         maxCommission: '',
-        payments: [{ id: 21, name: 'Платёж 3.1', amount: 5267.73, commissionOverride: '' }],
+        payments: [{ id: 21, name: 'Платёж 3.1', active: true, amount: 5267.73, commissionOverride: '' }],
       },
       {
         id: 22,
         name: 'Группа 4',
+        active: true,
         commission: 0,
         roundCommission: false,
         minCommission: '',
         maxCommission: '',
         payments: [
-          { id: 23, name: 'Платёж 4.1', amount: 295, commissionOverride: '' },
-          { id: 24, name: 'Платёж 4.2', amount: 1440.16, commissionOverride: '' },
-          { id: 25, name: 'Платёж 4.3', amount: 674.86, commissionOverride: '' },
-          { id: 26, name: 'Платёж 4.4', amount: 1127.57, commissionOverride: '' },
+          { id: 23, name: 'Платёж 4.1', active: true, amount: 295, commissionOverride: '' },
+          { id: 24, name: 'Платёж 4.2', active: true, amount: 1440.16, commissionOverride: '' },
+          { id: 25, name: 'Платёж 4.3', active: true, amount: 674.86, commissionOverride: '' },
+          { id: 26, name: 'Платёж 4.4', active: true, amount: 1127.57, commissionOverride: '' },
         ],
       },
       {
         id: 27,
         name: 'Группа 5',
+        active: true,
         commission: 0,
         roundCommission: false,
         minCommission: '',
         maxCommission: '',
-        payments: [{ id: 28, name: 'Платёж 5.1', amount: 40.86, commissionOverride: '' }],
+        payments: [{ id: 28, name: 'Платёж 5.1', active: true, amount: 40.86, commissionOverride: '' }],
       },
     ],
   };
@@ -170,19 +175,19 @@ describe('Allocation Algorithms on test scenario', () => {
       {
         id: 1,
         name: 'Группа 1',
+        active: true,
         commission: 0,
         roundCommission: false,
         minCommission: null,
         maxCommission: null,
         payments: [
-          { id: 1, name: 'П1', amount: 50000, commissionOverride: null },
+          { id: 1, name: 'П1', active: true, amount: 50000, commissionOverride: null },
         ],
       },
     ];
 
     const heurResults = allocate(cards, groups, 100);
     const heurSummary = summarize(heurResults);
-    // 5% от 50 000 ₽ = 2500 ₽ кэшбека (без ограничения лимитом!)
     expect(heurSummary.totalCashback).toBe(2500);
     expect(heurSummary.cardsUsed).toBe(1);
 
@@ -190,6 +195,50 @@ describe('Allocation Algorithms on test scenario', () => {
     const exactSummary = summarize(exactResults);
     expect(exactSummary.totalCashback).toBe(2500);
     expect(exactSummary.cardsUsed).toBe(1);
+  });
+
+  it('Inactive groups and inactive payments are completely excluded from allocation', () => {
+    const cards = [
+      { id: 1, name: 'Карта 1', active: true, rate: 10, limit: 1000, roundTo: 0 },
+    ];
+    const groups = [
+      {
+        id: 1,
+        name: 'Активная группа',
+        active: true,
+        commission: 0,
+        roundCommission: false,
+        minCommission: null,
+        maxCommission: null,
+        payments: [
+          { id: 1, name: 'Активный платёж', active: true, amount: 2000, commissionOverride: null },
+          { id: 2, name: 'Неактивный платёж', active: false, amount: 5000, commissionOverride: null },
+        ],
+      },
+      {
+        id: 2,
+        name: 'Неактивная группа',
+        active: false,
+        commission: 0,
+        roundCommission: false,
+        minCommission: null,
+        maxCommission: null,
+        payments: [
+          { id: 3, name: 'Платёж в выкл группе', active: true, amount: 10000, commissionOverride: null },
+        ],
+      },
+    ];
+
+    const heurResults = allocate(cards, groups, 100);
+    expect(heurResults[0].transactions.length).toBe(1);
+    expect(heurResults[0].transactions[0].payments.length).toBe(1);
+    expect(heurResults[0].transactions[0].payments[0].name).toBe('Активный платёж');
+    expect(heurResults[0].transactions[0].enteredOriginal).toBe(2000);
+
+    const { results: exactResults } = exactAllocate(cards, groups);
+    expect(exactResults[0].transactions.length).toBe(1);
+    expect(exactResults[0].transactions[0].payments.length).toBe(1);
+    expect(exactResults[0].transactions[0].payments[0].name).toBe('Активный платёж');
   });
 
   it('Higher rate cards are prioritized before lower rate cards', () => {
@@ -201,13 +250,14 @@ describe('Allocation Algorithms on test scenario', () => {
       {
         id: 1,
         name: 'Группа 1',
+        active: true,
         commission: 0,
         roundCommission: false,
         minCommission: null,
         maxCommission: null,
         payments: [
-          { id: 1, name: 'П1', amount: 5000, commissionOverride: null },
-          { id: 2, name: 'П2', amount: 5000, commissionOverride: null },
+          { id: 1, name: 'П1', active: true, amount: 5000, commissionOverride: null },
+          { id: 2, name: 'П2', active: true, amount: 5000, commissionOverride: null },
         ],
       },
     ];
@@ -225,20 +275,21 @@ describe('Allocation Algorithms on test scenario', () => {
 
   it('Spillover when active card limit is exceeded into second card', () => {
     const cards = [
-      { id: 1, name: 'Карта 1', active: true, rate: 10, limit: 500, roundTo: 1 }, // cap = 5000 ₽
-      { id: 2, name: 'Карта 2', active: true, rate: 10, limit: 500, roundTo: 1 }, // cap = 5000 ₽
+      { id: 1, name: 'Карта 1', active: true, rate: 10, limit: 500, roundTo: 1 },
+      { id: 2, name: 'Карта 2', active: true, rate: 10, limit: 500, roundTo: 1 },
     ];
     const groups = [
       {
         id: 1,
         name: 'Группа 1',
+        active: true,
         commission: 0,
         roundCommission: false,
         minCommission: null,
         maxCommission: null,
         payments: [
-          { id: 1, name: 'П1', amount: 4000, commissionOverride: null },
-          { id: 2, name: 'П2', amount: 4000, commissionOverride: null },
+          { id: 1, name: 'П1', active: true, amount: 4000, commissionOverride: null },
+          { id: 2, name: 'П2', active: true, amount: 4000, commissionOverride: null },
         ],
       },
     ];
