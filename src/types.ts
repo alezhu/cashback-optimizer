@@ -21,6 +21,8 @@ export type CalcMode = 'heuristic' | 'exact';
 export interface Payment {
   id: number;
   name: string;
+  /** Включен ли платёж в расчёт (по умолчанию true). */
+  active?: boolean;
   amount: FormNumber;
   /** Своя ставка комиссии для этого платежа. '' = использовать комиссию группы. */
   commissionOverride: FormNumber;
@@ -29,6 +31,8 @@ export interface Payment {
 export interface Group {
   id: number;
   name: string;
+  /** Включена ли группа в расчёт (по умолчанию true). */
+  active?: boolean;
   /** Базовая ставка комиссии группы, %. */
   commission: FormNumber;
   /** Округлять ли рассчитанную сумму комиссии платежа до целого рубля. */
@@ -65,6 +69,7 @@ export interface Card {
 export interface CleanPayment {
   id: number;
   name: string;
+  active: boolean;
   amount: number;
   commissionOverride: number | null;
 }
@@ -72,6 +77,7 @@ export interface CleanPayment {
 export interface CleanGroup {
   id: number;
   name: string;
+  active: boolean;
   commission: number;
   roundCommission: boolean;
   minCommission: number | null;

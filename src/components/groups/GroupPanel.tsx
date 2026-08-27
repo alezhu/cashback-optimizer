@@ -1,6 +1,6 @@
-// Карточка одной группы: название, параметры комиссии группы (ставка,
-// округление до целого, мин/макс) и разворачиваемый список платежей внутри неё.
-import { ChevronDown, ChevronRight, Trash2, Plus } from 'lucide-react';
+// Карточка одной группы: активность, название, комиссия, мин/макс, дублирование, Drag-and-Drop
+// и список входящих платежей.
+import { ChevronDown, ChevronRight, Trash2, Plus, Copy, GripVertical } from 'lucide-react';
 import PaymentRow from './PaymentRow';
 import { fmt } from '../../utils/format';
 import type { Group, Payment, FormNumber } from '../../types';
@@ -8,12 +8,20 @@ import type { Group, Payment, FormNumber } from '../../types';
 interface GroupPanelProps {
   group: Group;
   open: boolean;
+  index: number;
   onToggle: (id: number) => void;
   updateGroup: (id: number, patch: Partial<Group>) => void;
   removeGroup: (id: number) => void;
+  duplicateGroup: (id: number) => void;
   addPayment: (groupId: number) => void;
   updatePayment: (groupId: number, paymentId: number, patch: Partial<Payment>) => void;
   removePayment: (groupId: number, paymentId: number) => void;
+  onDragStart: (e: React.DragEvent, index: number) => void;
+  onDragOver: (e: React.DragEvent, index: number) => void;
+  onDrop: (e: React.DragEvent, index: number) => void;
+  onDragEnd: (e: React.DragEvent) => void;
+  isDragging: boolean;
+  isDragOver: boolean;
 }
 
 function parseFormNumber(raw: string): FormNumber {
@@ -23,19 +31,55 @@ function parseFormNumber(raw: string): FormNumber {
 export default function GroupPanel({
   group,
   open,
+  index,
   onToggle,
   updateGroup,
   removeGroup,
+  duplicateGroup,
   addPayment,
   updatePayment,
   removePayment,
+  onDragStart,
+  onDragOver,
+  onDrop,
+  onDragEnd,
+  isDragging,
+  isDragOver,
 }: GroupPanelProps) {
-  // Сумма группы без учёта комиссии — просто для ориентира в свёрнутом виде.
-  const total = group.payments.reduce((s, p) => s + (p.amount === '' ? 0 : p.amount), 0);
+  const isActive = group.active !== false;
+  // Сумма группы по активным платежам
+  const total = group.payments
+    .filter((p) => p.active !== false)
+    .reduce((s, p) => s + (p.amount === '' ? 0 : p.amount), 0);
 
   return (
-    <div className="group-panel">
+    <div
+      className={`group-panel ${!isActive ? 'group-panel-inactive' : ''} ${isDragging ? 'dragging' : ''} ${
+        isDragOver ? 'drag-over' : ''
+      }`}
+      onDragOver={(e) => onDragOver(e, index)}
+      onDrop={(e) => onDrop(e, index)}
+    >
       <div className="group-header" onClick={() => onToggle(group.id)}>
+        <div
+          className="drag-handle"
+          draggable
+          onClick={(e) => e.stopPropagation()}
+          onDragStart={(e) => onDragStart(e, index)}
+          onDragEnd={onDragEnd}
+          title="Перетащите для изменения порядка групп"
+        >
+          <GripVertical size={16} />
+        </div>
+
+        <input
+          type="checkbox"
+          checked={isActive}
+          title={isActive ? 'Группа активна (включена в расчёт)' : 'Группа отключена (не участвует в расчёте)'}
+          onClick={(e) => e.stopPropagation()}
+          onChange={(e) => updateGroup(group.id, { active: e.target.checked })}
+        />
+
         {open ? (
           <span className="chev">
             <ChevronDown size={16} />
@@ -53,8 +97,7 @@ export default function GroupPanel({
           onChange={(e) => updateGroup(group.id, { name: e.target.value })}
         />
 
-        {/* Базовая ставка комиссии группы — применяется ко всем её платежам,
-            если у конкретного платежа не задано своё переопределение. */}
+        {/* Базовая ставка комиссии группы */}
         <label className="mini-field" onClick={(e) => e.stopPropagation()}>
           Комиссия %
           <input
@@ -65,8 +108,7 @@ export default function GroupPanel({
           />
         </label>
 
-        {/* Если включено — рассчитанная сумма комиссии каждого платежа группы
-            округляется до целого рубля (Math.round). */}
+        {/* Округление комиссии */}
         <label className="checkbox-field" onClick={(e) => e.stopPropagation()}>
           <input
             type="checkbox"
@@ -76,7 +118,7 @@ export default function GroupPanel({
           округлять до целого
         </label>
 
-        {/* Нижняя граница суммы комиссии на один платёж, ₽ (пусто — не ограничено). */}
+        {/* Мин комиссия */}
         <label className="mini-field" onClick={(e) => e.stopPropagation()}>
           Мин, ₽
           <input
@@ -87,7 +129,7 @@ export default function GroupPanel({
           />
         </label>
 
-        {/* Верхняя граница суммы комиссии на один платёж, ₽ (пусто — не ограничено). */}
+        {/* Макс комиссия */}
         <label className="mini-field" onClick={(e) => e.stopPropagation()}>
           Макс, ₽
           <input
@@ -102,6 +144,18 @@ export default function GroupPanel({
 
         <button
           className="btn-icon"
+          title="Дублировать группу"
+          onClick={(e) => {
+            e.stopPropagation();
+            duplicateGroup(group.id);
+          }}
+        >
+          <Copy size={15} />
+        </button>
+
+        <button
+          className="btn-icon"
+          title="Удалить группу"
           onClick={(e) => {
             e.stopPropagation();
             removeGroup(group.id);
@@ -114,6 +168,7 @@ export default function GroupPanel({
       {open && (
         <div className="group-body">
           <div className="payment-row-header">
+            <div title="Активность">Вкл</div>
             <div>Название платежа</div>
             <div>Сумма, ₽</div>
             <div>Комиссия, % (своя)</div>

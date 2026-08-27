@@ -31,6 +31,7 @@ export function cleanPayment(p: Payment): CleanPayment {
   return {
     id: p.id,
     name: p.name,
+    active: p.active !== false,
     amount: toNumber(p.amount),
     commissionOverride: toNumberOrNull(p.commissionOverride),
   };
@@ -40,6 +41,7 @@ export function cleanGroup(g: Group): CleanGroup {
   return {
     id: g.id,
     name: g.name,
+    active: g.active !== false,
     commission: toNumber(g.commission),
     roundCommission: g.roundCommission,
     minCommission: toNumberOrNull(g.minCommission),

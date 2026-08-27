@@ -168,8 +168,9 @@ function fillCard(pool: Chunk[], card: CleanCard, target: number, cap: number): 
  */
 export function allocate(cards: CleanCard[], groups: CleanGroup[], tolerance: number): CardAllocationResult[] {
   const pool: Chunk[] = groups
-    .filter((g) => g.payments.length > 0)
-    .map((g) => ({ group: g, payments: [...g.payments] }));
+    .filter((g) => g.active)
+    .map((g) => ({ group: g, payments: g.payments.filter((p) => p.active) }))
+    .filter((ch) => ch.payments.length > 0);
 
   const cardResults: CardAllocationResult[] = cards.map((c) => ({ card: c, transactions: [] }));
   if (cards.length === 0 || pool.length === 0) return cardResults;

@@ -1,5 +1,5 @@
-// Одна строка платежа внутри группы: название, сумма и необязательное
-// переопределение ставки комиссии (если пусто — используется комиссия группы).
+// Одна строка платежа внутри группы: чекбокс активности, название, сумма
+// и переопределение ставки комиссии.
 import { Trash2 } from 'lucide-react';
 import type { Payment, Group, FormNumber } from '../../types';
 
@@ -15,8 +15,16 @@ function parseFormNumber(raw: string): FormNumber {
 }
 
 export default function PaymentRow({ payment, group, onUpdate, onRemove }: PaymentRowProps) {
+  const isActive = payment.active !== false;
+
   return (
-    <div className="payment-row">
+    <div className={`payment-row ${!isActive ? 'payment-row-inactive' : ''}`}>
+      <input
+        type="checkbox"
+        checked={isActive}
+        title={isActive ? 'Платёж активен (участвует в расчёте)' : 'Платёж отключен (не участвует в расчёте)'}
+        onChange={(e) => onUpdate(payment.id, { active: e.target.checked })}
+      />
       <input className="input" value={payment.name} onChange={(e) => onUpdate(payment.id, { name: e.target.value })} />
       <input
         type="number"
@@ -24,8 +32,6 @@ export default function PaymentRow({ payment, group, onUpdate, onRemove }: Payme
         value={payment.amount}
         onChange={(e) => onUpdate(payment.id, { amount: parseFormNumber(e.target.value) })}
       />
-      {/* placeholder показывает, какая комиссия применится по умолчанию (группы),
-          если поле оставить пустым */}
       <input
         type="number"
         className="input mono"
@@ -34,7 +40,7 @@ export default function PaymentRow({ payment, group, onUpdate, onRemove }: Payme
         value={payment.commissionOverride}
         onChange={(e) => onUpdate(payment.id, { commissionOverride: parseFormNumber(e.target.value) })}
       />
-      <button className="btn-icon" onClick={() => onRemove(payment.id)}>
+      <button className="btn-icon" onClick={() => onRemove(payment.id)} title="Удалить платёж">
         <Trash2 size={14} />
       </button>
     </div>

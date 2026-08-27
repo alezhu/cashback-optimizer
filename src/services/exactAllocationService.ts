@@ -36,7 +36,13 @@ interface EvaluationResult {
 
 export function exactAllocate(cards: CleanCard[], groups: CleanGroup[]): ExactResult {
   const flat: FlatPayment[] = [];
-  groups.forEach((g) => g.payments.forEach((p) => flat.push({ payment: p, group: g })));
+  groups
+    .filter((g) => g.active)
+    .forEach((g) =>
+      g.payments
+        .filter((p) => p.active)
+        .forEach((p) => flat.push({ payment: p, group: g }))
+    );
 
   const n = flat.length;
   const k = cards.length;

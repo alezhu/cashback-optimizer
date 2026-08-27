@@ -19,6 +19,7 @@ function makePayments(amounts: number[]): Payment[] {
   return amounts.map((a, i) => ({
     id: nextId(),
     name: `Платёж ${i + 1}`,
+    active: true,
     amount: a,
     commissionOverride: '',
   }));
@@ -30,6 +31,7 @@ export function seedGroups(): Group[] {
     {
       id: nextId(),
       name: 'Группа 1',
+      active: true,
       commission: 0,
       roundCommission: false,
       minCommission: '',
@@ -39,6 +41,7 @@ export function seedGroups(): Group[] {
     {
       id: nextId(),
       name: 'Группа 2',
+      active: true,
       commission: 1,
       roundCommission: false,
       minCommission: '',
@@ -48,6 +51,7 @@ export function seedGroups(): Group[] {
     {
       id: nextId(),
       name: 'Группа 3',
+      active: true,
       commission: 1,
       roundCommission: false,
       minCommission: '',
@@ -57,6 +61,7 @@ export function seedGroups(): Group[] {
     {
       id: nextId(),
       name: 'Группа 4',
+      active: true,
       commission: 0,
       roundCommission: false,
       minCommission: '',
@@ -66,6 +71,7 @@ export function seedGroups(): Group[] {
     {
       id: nextId(),
       name: 'Группа 5',
+      active: true,
       commission: 0,
       roundCommission: false,
       minCommission: '',
