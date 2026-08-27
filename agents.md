@@ -26,8 +26,9 @@
    * Банки начисляют кэшбек только за полные шаги суммы (например, шаг 100 ₽ при ставке 1% дает 1 ₽ кэшбека, а остаток сгорает из-за `Math.floor`).
    * Шаг округления суммы: $\text{step} = \frac{\text{roundTo} \times 100}{\text{rate}}$.
    * Сумма транзакции к списанию округляется вверх до ближайшего кратного шага.
-4. **Доплата в платеже (`increaseEntered`)**:
-   * Чтобы получить округленную сумму транзакции, система находит самый крупный платёж в транзакции (`adjustIdx`) и вычисляет необходимую надбавку к его исходной сумме с учетом производной комиссии $\frac{d(\text{entered})}{d(\text{billed})}$ (`marginalFactor`).
+4. **Доплата в платеже (`increaseEntered`) и флаг запрета увеличения (`noIncrease`)**:
+   * Чтобы получить округленную сумму транзакции, система находит самый крупный платёж в транзакции среди разрешённых (`noIncrease !== true`, `adjustIdx`) и вычисляет надбавку к его сумме с учетом производной комиссии $\frac{d(\text{entered})}{d(\text{billed})}$ (`marginalFactor`).
+   * Если для всех платежей транзакции установлен флаг `noIncrease: true`, доплата не начисляется (`increaseEntered = 0`), а кэшбек рассчитывается по фактической сумме списания.
 5. **Лимиты и активность карт**:
    * Каждая карта имеет флаг активности (`active: boolean`). Неактивная карта (`active === false`) полностью исключается из расчётов.
    * `limit` (₽) — месячный потолок кэшбека. Если `limit <= 0` (или поле пустое), карта считается **безлимитной** (кэшбек начисляется без ограничений). Если `limit > 0`, сумма кэшбека по карте: $\min(\sum \text{cashback}_{\text{tx}}, \text{limit})$.
@@ -60,14 +61,14 @@
 
 ```
 [UI / Form Input / IndexedDB / JSON]
-  Payment { amount: number | '', commissionOverride: number | '', active?: boolean }
+  Payment { amount: number | '', commissionOverride: number | '', active?: boolean, noIncrease?: boolean }
   Group   { commission: number | '', minCommission: number | '', active?: boolean, ... }
   Card    { rate: number | '', limit: number | '', roundTo: number | '', active?: boolean }
         │
         │ normalize.ts (cleanCard, cleanGroup, cleanPayment)
         ▼
 [Calculation Layer (Pure Math)]
-  CleanPayment { amount: number, commissionOverride: number | null, active: boolean }
+  CleanPayment { amount: number, commissionOverride: number | null, active: boolean, noIncrease: boolean }
   CleanGroup   { commission: number, minCommission: number | null, active: boolean, ... }
   CleanCard    { rate: number, limit: number, roundTo: number, active: boolean }
 ```
