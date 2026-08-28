@@ -1,7 +1,7 @@
 // Вкладка «Расчёт»: выбор алгоритма, кнопка запуска, вывод результатов по картам,
 // финансовая аналитика (чистая выгода, комиссии, наценки), бенчмарк (vs 1%) и экспорт.
 import { useState, useEffect } from 'react';
-import { Calculator, Zap, Search, FileDown, TrendingUp, CircleHelp, X } from 'lucide-react';
+import { Calculator, Zap, Search, FileDown, TrendingUp, CircleHelp, X, Coffee } from 'lucide-react';
 import CardResult from './CardResult';
 import { fmt } from '../../utils/format';
 import { exportResultsToFile } from '../../services/exportImport';
@@ -211,6 +211,27 @@ export default function CalcTab({
             >
               <FileDown size={14} /> Выгрузить результат
             </button>
+          </div>
+
+          <div className="tip-banner">
+            <div className="tip-banner-content">
+              <span className="tip-banner-icon">☕</span>
+              <div>
+                <div className="tip-banner-title">Сэкономили на кэшбеке?</div>
+                <div className="tip-banner-desc">
+                  Если приложение помогло вам сохранить деньги, поддержите автора чашкой кофе.
+                </div>
+              </div>
+            </div>
+            <a
+              href="https://pay.cloudtips.ru/p/01868f3b"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn btn-primary tip-banner-link"
+              title="Перевести донат автору через СБП, T-Pay или картой"
+            >
+              <Coffee size={14} /> Сказать спасибо через СБП ↗
+            </a>
           </div>
         </div>
       )}
