@@ -1,7 +1,7 @@
 // Корневой компонент приложения: хранит всё состояние (карты, группы, платежи,
 // тему оформления, настройки и результат расчёта) и раздаёт его вкладкам.
 import { useEffect, useState, useRef } from 'react';
-import { Sun, Moon } from 'lucide-react';
+import { Sun, Moon, Coffee } from 'lucide-react';
 import Tabs, { type TabId } from './components/Tabs';
 import CardsTab from './components/cards/CardsTab';
 import GroupsTab from './components/groups/GroupsTab';
@@ -290,6 +290,16 @@ export default function App() {
             <p>Сервис для умно-жадных: максимизация кэшбека при оплате несколькими картами</p>
           </div>
           <div className="header-actions">
+            <a
+              href="https://pay.cloudtips.ru/p/01868f3b"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="theme-toggle-btn donate-btn"
+              title="Поддержать автора чашкой кофе (CloudTips: СБП, карты)"
+            >
+              <Coffee size={14} />
+              <span>На кофе</span>
+            </a>
             <button className="theme-toggle-btn" onClick={toggleTheme} title="Сменить тему оформления">
               {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
               {theme === 'dark' ? 'Светлая тема' : 'Тёмная тема'}
@@ -309,6 +319,16 @@ export default function App() {
           <p>Сервис для умно-жадных: максимизация кэшбека при оплате несколькими картами</p>
         </div>
         <div className="header-actions">
+          <a
+            href="https://pay.cloudtips.ru/p/01868f3b"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="theme-toggle-btn donate-btn"
+            title="Поддержать автора чашкой кофе (CloudTips: СБП, карты)"
+          >
+            <Coffee size={14} />
+            <span>На кофе</span>
+          </a>
           <button className="theme-toggle-btn" onClick={toggleTheme} title="Сменить тему оформления">
             {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
             {theme === 'dark' ? 'Светлая тема' : 'Тёмная тема'}
