@@ -2,7 +2,7 @@
 // ставка комиссии, округление, доплата, копирование сумм и предупреждения.
 import { useState, Fragment } from 'react';
 import { Copy, Check, AlertTriangle } from 'lucide-react';
-import { fmt } from '../../utils/format';
+import { fmt, fmtClipboard } from '../../utils/format';
 import { paymentCommissionRate, isRateOverridden, commissionAmount, billedOf } from '../../services/calcService';
 import type { TransactionResult } from '../../types';
 
@@ -21,7 +21,7 @@ export default function TransactionBlock({ tx, index }: TransactionBlockProps) {
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
   const copyToClipboard = (key: string, amount: number) => {
-    navigator.clipboard.writeText(fmt(amount));
+    navigator.clipboard.writeText(fmtClipboard(amount));
     setCopiedKey(key);
     setTimeout(() => {
       setCopiedKey((current) => (current === key ? null : current));
