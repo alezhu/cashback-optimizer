@@ -5,7 +5,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import TransactionBlock from '../TransactionBlock';
-import { fmt } from '../../../utils/format';
+import { fmt, fmtClipboard } from '../../../utils/format';
 import type { TransactionResult } from '../../../types';
 
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -73,7 +73,7 @@ describe('TransactionBlock copy functionality', () => {
     cashback: 100,
   };
 
-  it('copies formatted original amount with comma delimiter to clipboard', async () => {
+  it('copies formatted original amount with comma delimiter and without spaces to clipboard', async () => {
     root = createRoot(container);
     await act(async () => {
       root!.render(<TransactionBlock tx={mockTx} index={0} />);
@@ -88,13 +88,15 @@ describe('TransactionBlock copy functionality', () => {
 
     expect(writeTextMock).toHaveBeenCalledTimes(1);
     const copiedValue = writeTextMock.mock.calls[0][0];
-    // Must be formatted as displayed (with comma, not dot)
-    expect(copiedValue).toBe(fmt(mockTx.payments[0].amount));
+    // Must be formatted with comma and strictly without any spaces
+    expect(copiedValue).toBe(fmtClipboard(mockTx.payments[0].amount));
+    expect(copiedValue).toBe('1994,31');
     expect(copiedValue).toContain(',');
     expect(copiedValue).not.toContain('.');
+    expect(copiedValue).not.toMatch(/\s|\u00A0|\u202F/);
   });
 
-  it('copies formatted adjusted amount with comma delimiter from adjustment row', async () => {
+  it('copies formatted adjusted amount with comma delimiter and without spaces from adjustment row', async () => {
     root = createRoot(container);
     await act(async () => {
       root!.render(<TransactionBlock tx={mockTx} index={0} />);
@@ -112,9 +114,11 @@ describe('TransactionBlock copy functionality', () => {
     expect(writeTextMock).toHaveBeenCalledTimes(1);
     const copiedValue = writeTextMock.mock.calls[0][0];
     const expectedAdjustedAmount = mockTx.payments[0].amount + mockTx.increaseEntered;
-    expect(copiedValue).toBe(fmt(expectedAdjustedAmount));
+    expect(copiedValue).toBe(fmtClipboard(expectedAdjustedAmount));
+    expect(copiedValue).toBe('2000,00');
     expect(copiedValue).toContain(',');
     expect(copiedValue).not.toContain('.');
+    expect(copiedValue).not.toMatch(/\s|\u00A0|\u202F/);
   });
 
   it('displays compact commission with tooltip and copies formatted billed amount with commission', async () => {
@@ -157,7 +161,7 @@ describe('TransactionBlock copy functionality', () => {
     expect(billedCell).not.toBeNull();
     expect(billedCell.textContent?.trim()).toBe('1\u00A0015,00 ₽');
 
-    // Copy billed amount from main row
+    // Copy billed amount from main row (without spaces)
     const billedCopyBtn = container.querySelector('.tx-has-adjust .pbilled .btn-copy') as HTMLButtonElement;
     expect(billedCopyBtn).not.toBeNull();
 
@@ -165,7 +169,7 @@ describe('TransactionBlock copy functionality', () => {
       billedCopyBtn.click();
     });
 
-    expect(writeTextMock).toHaveBeenCalledWith(fmt(1015));
+    expect(writeTextMock).toHaveBeenCalledWith('1015,00');
 
     // Check adjustment sub-row: commission and billed amount from adjustment
     // Adjusted amount: 1000 + 100 = 1100. Commission: 1100 * 1.5% = 16.50. Billed: 1116.50
@@ -175,7 +179,7 @@ describe('TransactionBlock copy functionality', () => {
     const adjBilledCell = container.querySelector('.tx-adjust-row .pbilled .pamount-val') as HTMLElement;
     expect(adjBilledCell.textContent?.trim()).toBe('1\u00A0116,50 ₽');
 
-    // Copy billed amount from adjustment row
+    // Copy billed amount from adjustment row (without spaces)
     const adjBilledCopyBtn = container.querySelector('.tx-adjust-row .pbilled .btn-copy') as HTMLButtonElement;
     expect(adjBilledCopyBtn).not.toBeNull();
 
@@ -183,6 +187,6 @@ describe('TransactionBlock copy functionality', () => {
       adjBilledCopyBtn.click();
     });
 
-    expect(writeTextMock).toHaveBeenCalledWith(fmt(1116.5));
+    expect(writeTextMock).toHaveBeenCalledWith('1116,50');
   });
 });
