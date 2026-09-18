@@ -21,7 +21,7 @@ export default function TransactionBlock({ tx, index }: TransactionBlockProps) {
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
   const copyToClipboard = (key: string, amount: number) => {
-    navigator.clipboard.writeText(amount.toFixed(2));
+    navigator.clipboard.writeText(fmt(amount));
     setCopiedKey(key);
     setTimeout(() => {
       setCopiedKey((current) => (current === key ? null : current));
