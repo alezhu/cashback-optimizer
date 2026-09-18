@@ -1,9 +1,9 @@
 // Одна транзакция внутри результата карты: список вошедших платежей,
 // ставка комиссии, округление, доплата, копирование сумм и предупреждения.
-import { useState } from 'react';
+import { useState, Fragment } from 'react';
 import { Copy, Check, AlertTriangle } from 'lucide-react';
 import { fmt } from '../../utils/format';
-import { paymentCommissionRate, isRateOverridden, commissionAmount } from '../../services/calcService';
+import { paymentCommissionRate, isRateOverridden, commissionAmount, billedOf } from '../../services/calcService';
 import type { TransactionResult } from '../../types';
 
 interface TransactionBlockProps {
@@ -38,51 +38,115 @@ export default function TransactionBlock({ tx, index }: TransactionBlockProps) {
       </div>
 
       <table className="tx-table">
+        <thead>
+          <tr className="tx-table-head">
+            <th className="th-name">Платёж</th>
+            <th className="th-amount">Сумма</th>
+            <th className="th-rate">Комиссия</th>
+            <th className="th-billed" title="Сумма с учётом комиссии">С комиссией</th>
+          </tr>
+        </thead>
         <tbody>
           {payments.map((p, pi) => {
             const rate = paymentCommissionRate(p, group);
             const overridden = isRateOverridden(p);
+            const commAmt = commissionAmount(p, group);
+            const billedAmt = billedOf(p, group);
             const isAdjust = pi === adjustIdx && hasAdjust;
             const newAmt = isAdjust ? p.amount + increaseEntered : p.amount;
+            const adjustedPayment = isAdjust ? { ...p, amount: newAmt } : p;
+            const adjCommAmt = isAdjust ? commissionAmount(adjustedPayment, group) : 0;
+            const adjBilledAmt = isAdjust ? billedOf(adjustedPayment, group) : 0;
+
             const origKey = `${p.id}-orig`;
-            const adjKey = `${p.id}-adj`;
+            const billedKey = `${p.id}-billed`;
+            const adjAmtKey = `${p.id}-adj-amt`;
+            const adjBilledKey = `${p.id}-adj-billed`;
+
             const isOrigCopied = copiedKey === origKey;
-            const isAdjCopied = copiedKey === adjKey;
+            const isBilledCopied = copiedKey === billedKey;
+            const isAdjAmtCopied = copiedKey === adjAmtKey;
+            const isAdjBilledCopied = copiedKey === adjBilledKey;
 
             return (
-              <tr key={p.id}>
-                <td className="pname">{p.name}</td>
-                <td className="pamount">
-                  <div className="pamount-cell">
-                    <span className="pamount-val">{fmt(p.amount)} ₽</span>
-                    <button
-                      className={`btn-copy btn-copy-icon ${isOrigCopied ? 'btn-copy-success' : ''}`}
-                      onClick={() => copyToClipboard(origKey, p.amount)}
-                      title={isOrigCopied ? 'Скопировано!' : 'Скопировать сумму в буфер обмена'}
-                    >
-                      {isOrigCopied ? <Check size={11} /> : <Copy size={11} />}
-                    </button>
-                  </div>
-                </td>
-                <td className="prate">
-                  комиссия {rate}%{overridden ? ' (своя)' : ''} · {fmt(commissionAmount(p, group))} ₽
-                </td>
-                <td className="padjust">
-                  {isAdjust && (
-                    <span>
-                      → ввести <b>{fmt(newAmt)} ₽</b> (+{fmt(increaseEntered)})
+              <Fragment key={p.id}>
+                <tr className={isAdjust ? 'tx-has-adjust' : undefined}>
+                  <td className="pname">{p.name}</td>
+                  <td className="pamount">
+                    <div className="pamount-cell">
+                      <span className="pamount-val">{fmt(p.amount)} ₽</span>
                       <button
-                        className={`btn-copy ${isAdjCopied ? 'btn-copy-success' : ''}`}
-                        onClick={() => copyToClipboard(adjKey, newAmt)}
-                        title="Скопировать скорректированную сумму в буфер обмена"
+                        className={`btn-copy btn-copy-icon ${isOrigCopied ? 'btn-copy-success' : ''}`}
+                        onClick={() => copyToClipboard(origKey, p.amount)}
+                        title={isOrigCopied ? 'Скопировано!' : 'Скопировать исходную сумму в буфер обмена'}
                       >
-                        {isAdjCopied ? <Check size={11} /> : <Copy size={11} />}
-                        {isAdjCopied ? 'Скопировано' : 'Копировать'}
+                        {isOrigCopied ? <Check size={11} /> : <Copy size={11} />}
                       </button>
+                    </div>
+                  </td>
+                  <td className="prate">
+                    <span className="prate-val">
+                      {rate}%{overridden ? ' (своя)' : ''} ({fmt(commAmt)} ₽)
                     </span>
-                  )}
-                </td>
-              </tr>
+                  </td>
+                  <td className="pbilled">
+                    <div className="pamount-cell">
+                      <span className="pamount-val" title="Сумма с комиссией">
+                        {fmt(billedAmt)} ₽
+                      </span>
+                      <button
+                        className={`btn-copy btn-copy-icon ${isBilledCopied ? 'btn-copy-success' : ''}`}
+                        onClick={() => copyToClipboard(billedKey, billedAmt)}
+                        title={isBilledCopied ? 'Скопировано!' : 'Скопировать сумму с комиссией в буфер обмена'}
+                      >
+                        {isBilledCopied ? <Check size={11} /> : <Copy size={11} />}
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+
+                {isAdjust && (
+                  <tr className="tx-adjust-row">
+                    <td className="pname padjust-name">
+                      <span className="padjust-badge">
+                        ↳ доплата (+{fmt(increaseEntered)} ₽)
+                      </span>
+                    </td>
+                    <td className="pamount padjust-amount">
+                      <div className="pamount-cell">
+                        <span className="padjust-prefix">ввести</span>
+                        <span className="pamount-val padjust-val">{fmt(newAmt)} ₽</span>
+                        <button
+                          className={`btn-copy btn-copy-icon ${isAdjAmtCopied ? 'btn-copy-success' : ''}`}
+                          onClick={() => copyToClipboard(adjAmtKey, newAmt)}
+                          title={isAdjAmtCopied ? 'Скопировано!' : 'Скопировать скорректированную сумму в буфер обмена'}
+                        >
+                          {isAdjAmtCopied ? <Check size={11} /> : <Copy size={11} />}
+                        </button>
+                      </div>
+                    </td>
+                    <td className="prate padjust-rate">
+                      <span className="prate-val">
+                        {rate}%{overridden ? ' (своя)' : ''} ({fmt(adjCommAmt)} ₽)
+                      </span>
+                    </td>
+                    <td className="pbilled padjust-billed">
+                      <div className="pamount-cell">
+                        <span className="pamount-val padjust-val" title="Сумма с комиссией от доплаты">
+                          {fmt(adjBilledAmt)} ₽
+                        </span>
+                        <button
+                          className={`btn-copy btn-copy-icon ${isAdjBilledCopied ? 'btn-copy-success' : ''}`}
+                          onClick={() => copyToClipboard(adjBilledKey, adjBilledAmt)}
+                          title={isAdjBilledCopied ? 'Скопировано!' : 'Скопировать сумму с комиссией от доплаты в буфер обмена'}
+                        >
+                          {isAdjBilledCopied ? <Check size={11} /> : <Copy size={11} />}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </Fragment>
             );
           })}
         </tbody>

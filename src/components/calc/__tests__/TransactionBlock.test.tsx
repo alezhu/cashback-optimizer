@@ -94,13 +94,15 @@ describe('TransactionBlock copy functionality', () => {
     expect(copiedValue).not.toContain('.');
   });
 
-  it('copies formatted adjusted amount with comma delimiter to clipboard', async () => {
+  it('copies formatted adjusted amount with comma delimiter from adjustment row', async () => {
     root = createRoot(container);
     await act(async () => {
       root!.render(<TransactionBlock tx={mockTx} index={0} />);
     });
 
-    const adjCopyBtn = container.querySelector('.padjust .btn-copy') as HTMLButtonElement;
+    expect(container.querySelector('.tx-adjust-row .padjust-prefix')?.textContent).toBe('ввести');
+
+    const adjCopyBtn = container.querySelector('.tx-adjust-row .pamount .btn-copy') as HTMLButtonElement;
     expect(adjCopyBtn).not.toBeNull();
 
     await act(async () => {
@@ -113,5 +115,74 @@ describe('TransactionBlock copy functionality', () => {
     expect(copiedValue).toBe(fmt(expectedAdjustedAmount));
     expect(copiedValue).toContain(',');
     expect(copiedValue).not.toContain('.');
+  });
+
+  it('displays compact commission with tooltip and copies formatted billed amount with commission', async () => {
+    const txWithCommission: TransactionResult = {
+      ...mockTx,
+      group: {
+        ...mockTx.group,
+        commission: 1.5,
+      },
+      payments: [
+        {
+          ...mockTx.payments[0],
+          amount: 1000,
+        },
+      ],
+      increaseEntered: 100,
+      factBilledSum: 1116.5,
+    };
+
+    root = createRoot(container);
+    await act(async () => {
+      root!.render(<TransactionBlock tx={txWithCommission} index={0} />);
+    });
+
+    // Check table headers exist
+    expect(container.querySelector('.th-name')?.textContent).toBe('Платёж');
+    expect(container.querySelector('.th-amount')?.textContent).toBe('Сумма');
+    expect(container.querySelector('.th-rate')?.textContent).toBe('Комиссия');
+    expect(container.querySelector('.th-billed')?.textContent).toBe('С комиссией');
+
+    // Check commission block in main row: no word "комиссия" in text, no tooltip (since it is in the header)
+    const prateVal = container.querySelector('.tx-has-adjust .prate .prate-val') as HTMLElement;
+    expect(prateVal).not.toBeNull();
+    expect(prateVal.textContent?.trim()).toBe('1.5% (15,00 ₽)');
+    expect(prateVal.textContent).not.toContain('комиссия');
+    expect(prateVal.getAttribute('title')).toBeNull();
+
+    // Check billed cell in main row: right-aligned, 1000 + 1.5% = 1015.00
+    const billedCell = container.querySelector('.tx-has-adjust .pbilled .pamount-val') as HTMLElement;
+    expect(billedCell).not.toBeNull();
+    expect(billedCell.textContent?.trim()).toBe('1\u00A0015,00 ₽');
+
+    // Copy billed amount from main row
+    const billedCopyBtn = container.querySelector('.tx-has-adjust .pbilled .btn-copy') as HTMLButtonElement;
+    expect(billedCopyBtn).not.toBeNull();
+
+    await act(async () => {
+      billedCopyBtn.click();
+    });
+
+    expect(writeTextMock).toHaveBeenCalledWith(fmt(1015));
+
+    // Check adjustment sub-row: commission and billed amount from adjustment
+    // Adjusted amount: 1000 + 100 = 1100. Commission: 1100 * 1.5% = 16.50. Billed: 1116.50
+    const adjRateVal = container.querySelector('.tx-adjust-row .prate .prate-val') as HTMLElement;
+    expect(adjRateVal.textContent?.trim()).toBe('1.5% (16,50 ₽)');
+
+    const adjBilledCell = container.querySelector('.tx-adjust-row .pbilled .pamount-val') as HTMLElement;
+    expect(adjBilledCell.textContent?.trim()).toBe('1\u00A0116,50 ₽');
+
+    // Copy billed amount from adjustment row
+    const adjBilledCopyBtn = container.querySelector('.tx-adjust-row .pbilled .btn-copy') as HTMLButtonElement;
+    expect(adjBilledCopyBtn).not.toBeNull();
+
+    await act(async () => {
+      adjBilledCopyBtn.click();
+    });
+
+    expect(writeTextMock).toHaveBeenCalledWith(fmt(1116.5));
   });
 });

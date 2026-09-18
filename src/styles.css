@@ -503,7 +503,7 @@ body {
 .inactive-badge { font-size: 12px; color: var(--muted-2); font-weight: normal; }
 .capped-note { font-size: 11px; color: var(--rust); margin-left: 4px; }
 
-.tx-block { padding: 14px 16px; border-top: 1px solid var(--border); }
+.tx-block { padding: 14px 16px; border-top: 1px solid var(--border); overflow-x: auto; }
 .tx-block:first-child { border-top: none; }
 .tx-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
 .tx-head .name { font-size: 14px; font-weight: 500; color: var(--text); }
@@ -516,6 +516,23 @@ body {
   font-size: 13px;
   border-collapse: collapse;
 }
+.tx-table th {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--muted-2);
+  padding: 3px 10px 5px 0;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  white-space: nowrap;
+}
+.tx-table th.th-amount,
+.tx-table th.th-billed {
+  text-align: right;
+  padding-right: 30px;
+}
+.tx-table th.th-rate {
+  padding-left: 10px;
+}
 .tx-table td {
   padding: 4px 10px 4px 0;
   vertical-align: middle;
@@ -523,12 +540,12 @@ body {
 .tx-table .pname {
   color: var(--muted);
   font-family: 'IBM Plex Sans', sans-serif;
-  width: 26%;
+  width: 32%;
 }
 .tx-table .pamount {
   color: var(--text);
   white-space: nowrap;
-  width: 155px;
+  width: 170px;
 }
 .tx-table .pamount-cell {
   display: flex;
@@ -541,17 +558,49 @@ body {
   font-variant-numeric: tabular-nums;
   flex: 1;
 }
+.tx-table .padjust-prefix {
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 12px;
+  color: var(--rust);
+  font-weight: normal;
+  margin-right: auto;
+  white-space: nowrap;
+}
 .tx-table .prate {
   color: var(--muted-2);
   font-size: 12px;
   white-space: nowrap;
-  width: 26%;
   padding-left: 10px;
 }
-.tx-table .padjust {
-  color: var(--rust);
-  font-size: 12px;
+.tx-table .pbilled {
+  color: var(--text);
   white-space: nowrap;
+  width: 145px;
+}
+.tx-table .pbilled .pamount-val {
+  font-weight: 500;
+}
+.tx-table .tx-has-adjust td {
+  padding-bottom: 1px;
+}
+.tx-table .tx-adjust-row td {
+  padding-top: 1px;
+  padding-bottom: 6px;
+}
+.tx-table .padjust-name {
+  font-size: 12px;
+  color: var(--rust);
+  padding-left: 8px;
+}
+.tx-table .padjust-badge {
+  color: var(--rust);
+}
+.tx-table .padjust-val {
+  color: var(--rust);
+  font-weight: 500;
+}
+.tx-table .padjust-rate {
+  color: var(--rust);
 }
 
 .tx-footer { display: flex; gap: 20px; margin-top: 8px; font-size: 12px; color: var(--muted-2); }
